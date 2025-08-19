@@ -1,0 +1,59 @@
+{% extends 'core/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Paramètres de mon entreprise{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container is-max-desktop"> 
+        <h1 class="title is-4 is-size-3-mobile has-text-centered mb-4">
+            <span class="icon-text">
+                <span class="icon is-large"><i class="fas fa-building"></i></span>
+                <span>Paramètres de mon entreprise</span>
+            </span>
+        </h1>
+        <p class="subtitle is-6 is-size-6-mobile has-text-centered mb-6">
+            Configurez les informations essentielles de votre entreprise pour l'émission de vos factures.
+        </p>
+
+        <div class="box p-5">
+            <h2 class="title is-5 is-size-5-mobile has-text-link mb-4">
+                <span class="icon-text">
+                    <span class="icon"><i class="fas fa-cog"></i></span>
+                    <span>Informations Générales</span>
+                </span>
+            </h2>
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                {# crispy-forms va générer le HTML de base pour les champs #}
+                {# Nous nous assurons que crispy-forms utilise le template Bulma #}
+                {{ form|crispy }}
+                
+                <div class="field is-grouped is-grouped-centered mt-5">
+                    <div class="control">
+                        <button type="submit" class="button is-link is-medium is-responsive">
+                            <span class="icon"><i class="fas fa-save"></i></span>
+                            <span>Enregistrer les modifications</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        {% if company_profile.logo %}
+        <div class="box mt-5 p-5 has-text-centered">
+            <h2 class="title is-4 is-size-5-mobile has-text-info mb-4">
+                <span class="icon-text">
+                    <span class="icon"><i class="fas fa-image"></i></span>
+                    <span>Logo actuel</span>
+                </span>
+            </h2>
+            <figure class="image is-128x128 is-inline-block">
+                <img src="{{ company_profile.logo.url }}" alt="Logo de l'entreprise" style="object-fit: contain;">
+            </figure>
+            <p class="is-size-7 mt-3 has-text-grey">Le logo s'affichera sur vos factures.</p>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

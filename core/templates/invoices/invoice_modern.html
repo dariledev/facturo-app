@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Facture {{ invoice.invoice_number }}</title>
+    <style>
+        body { font-family: 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif; font-size: 13px; line-height: 1.6; color: #333; }
+        .container { max-width: 800px; margin: 40px auto; padding: 30px; border: 1px solid #eee; box-shadow: 0 0 10px rgba(0,0,0,0.05); }
+        .invoice-box { padding: 30px; }
+        .header { display: flex; justify-content: space-between; margin-bottom: 50px; }
+        .header .invoice-title { font-size: 32px; font-weight: 300; color: #444; }
+        .header .company-name { font-size: 18px; font-weight: bold; }
+        .details-section { display: flex; justify-content: space-between; margin-bottom: 30px; }
+        .details-section div { width: 45%; }
+        .details-section p { margin: 5px 0; }
+        .details-section strong { color: #555; }
+        .invoice-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .invoice-table th, .invoice-table td { text-align: left; padding: 12px; border-bottom: 1px solid #ddd; }
+        .invoice-table th { background-color: #f8f8f8; color: #555; }
+        .invoice-table tfoot td { font-weight: bold; padding: 12px; text-align: right; }
+        .invoice-table tfoot tr:last-child { border-top: 2px solid #555; font-size: 18px; }
+        .notes { margin-top: 50px; border-top: 1px solid #ddd; padding-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="invoice-box">
+            <div class="header">
+                <div class="company-info">
+                    {% if company.logo %}
+                        <img src="{{ company.logo.url }}" alt="Logo" style="max-height: 80px; width: auto;">
+                    {% endif %}
+                    <p class="company-name">{{ company.name }}</p>
+                    <p>{{ company.address|linebreaksbr }}</p>
+                </div>
+                <div>
+                    <h1 class="invoice-title">FACTURE</h1>
+                    <p>N°: {{ invoice.invoice_number }}</p>
+                    <p>Date: {{ invoice.issue_date|date:"d F Y" }}</p>
+                </div>
+            </div>
+
+            <div class="details-section">
+                <div>
+                    <strong>Facturé à:</strong>
+                    <p>{{ client.name }}</p>
+                    <p>{{ client.address|linebreaksbr }}</p>
+                    <p>{{ client.email }}</p>
+                </div>
+                <div>
+                    <strong>Détails:</strong>
+                    <p>Date d'échéance: {{ invoice.due_date|date:"d F Y" }}</p>
+                    <p>Statut: <span style="font-weight: bold;">{{ invoice.get_status_display }}</span></p>
+                </div>
+            </div>
+
+            <table class="invoice-table">
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th style="text-align: right;">Quantité</th>
+                        <th style="text-align: right;">Prix unitaire</th>
+                        <th style="text-align: right;">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in invoice_items %}
+                        <tr>
+                            <td>{{ item.description }}</td>
+                            <td style="text-align: right;">{{ item.quantity }}</td>
+                            <td style="text-align: right;">{{ item.unit_price }}</td>
+                            <td style="text-align: right;">{{ item.total_price }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3">Sous-total</td>
+                        <td>{{ invoice.subtotal }} F CFA</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3">Remise ({{ invoice.discount }}%)</td>
+                        <td>-{{ discount_amount }} F CFA</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3">TVA</td>
+                        <td>{{ invoice.tax_amount }} F CFA</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3">Frais de port</td>
+                        <td>{{ invoice.shipping_cost }} F CFA</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3">Total à payer</td>
+                        <td>{{ invoice.total_amount }} F CFA</td>
+                    </tr>
+                </tfoot>
+            </table>
+            
+            {% if invoice.notes %}
+            <div class="notes">
+                <p><strong>Notes:</strong></p>
+                <p>{{ invoice.notes|linebreaksbr }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

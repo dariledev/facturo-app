@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Nouvelle Demande de Support Facturo</title>
+</head>
+<body>
+    <p>Bonjour,</p>
+    <p>Vous avez reçu une nouvelle demande de support via le formulaire Facturo.</p>
+
+    <h3>Détails de la demande :</h3>
+    <ul>
+        <li><strong>Nom de l'utilisateur :</strong> {{ name }}</li>
+        <li><strong>Email de l'utilisateur :</strong> {{ email }}</li>
+        <li><strong>Type de sujet :</strong> {{ subject_type }}</li>
+    </ul>
+
+    <h4>Description :</h4>
+    <p style="white-space: pre-wrap; background-color: #f0f0f0; padding: 10px; border-radius: 5px;">{{ description }}</p>
+
+    <p>Vous pouvez répondre directement à cet email pour contacter l'utilisateur.</p>
+    <p>Cordialement,<br>L'équipe Facturo</p>
+</body>
+</html>

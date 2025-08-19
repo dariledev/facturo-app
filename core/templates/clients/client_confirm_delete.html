@@ -1,0 +1,27 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Supprimer le Client{% endblock %}
+
+{% block content %}
+<h1 class="title is-1 has-text-danger">Supprimer le Client</h1>
+<p class="subtitle is-4">Êtes-vous sûr de vouloir supprimer le client suivant ?</p>
+
+<div class="box notification is-warning is-light">
+    <p class="title is-5">Nom du client : <strong>{{ client.name }}</strong></p>
+    <p>Cette action est irréversible et supprimera également toutes les **factures associées** à ce client !</p>
+</div>
+
+<form method="post">
+    {% csrf_token %}
+    <div class="field is-grouped">
+        <div class="control">
+            <button type="submit" class="button is-danger">
+                Oui, supprimer
+            </button>
+        </div>
+        <div class="control">
+            <a href="{% url 'client_list' %}" class="button is-light">Annuler</a>
+        </div>
+    </div>
+</form>
+{% endblock %}

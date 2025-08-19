@@ -1,0 +1,323 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Tableau de Bord{% endblock %}
+
+{% block content %}
+        {% if request.user.is_authenticated and request.user.is_trial_active and days_left is not None %}
+        <div class="notification is-danger is-light has-text-centered">
+            Votre période d'essai expire dans **{{ days_left }}** jour(s).
+        </div>
+    {% endif %}
+<h1 class="title is-4 is-size-4-mobile mt-2">Tableau de Bord</h1> 
+<p class="subtitle is-5 is-size-5-mobile">Aperçu rapide de votre activité.</p> 
+<hr>
+
+<h2 class="title is-4 is-size-4-mobile">Exportation des Rapports</h2>
+<div class="box">
+    <p class="is-size-6-mobile">Exporter les données des factures filtrées :</p>
+    <div class="buttons is-flex is-flex-wrap-wrap is-justify-content-center">
+        <a href="{% url 'export_invoices_excel' %}?period={{ selected_period }}{% if start_date_filter %}&start_date={{ start_date_filter }}{% endif %}{% if end_date_filter %}&end_date={{ end_date_filter }}{% endif %}" 
+           class="button is-success is-small is-fullwidth-mobile">
+            <span class="icon"><i class="fas fa-file-excel"></i></span>
+            <span>Exporter en Excel</span>
+        </a>
+        <a href="{% url 'export_invoices_csv' %}?period={{ selected_period }}{% if start_date_filter %}&start_date={{ start_date_filter }}{% endif %}{% if end_date_filter %}&end_date={{ end_date_filter }}{% endif %}" 
+           class="button is-warning is-small is-fullwidth-mobile"> 
+            <span class="icon"><i class="fas fa-file-csv"></i></span>
+            <span>Exporter en CSV</span>
+        </a>
+    </div>
+</div>
+
+<div class="box">
+    <h2 class="title is-4 is-size-5-mobile">Filtrer les données</h2>
+    <form method="get" action="{% url 'dashboard' %}">
+        <div class="field is-grouped is-grouped-multiline">
+            <div class="control is-expanded"> 
+                <div class="select is-fullwidth"> 
+                    <select name="period" onchange="this.form.submit()">
+                        <option value="last_30_days" {% if selected_period == 'last_30_days' %}selected{% endif %}>30 derniers jours</option>
+                        <option value="last_12_months" {% if selected_period == 'last_12_months' %}selected{% endif %}>12 derniers mois</option>
+                        <option value="this_year" {% if selected_period == 'this_year' %}selected{% endif %}>Cette année</option>
+                        <option value="last_year" {% if selected_period == 'last_year' %}selected{% endif %}>L'année dernière</option>
+                        <option value="custom" {% if selected_period == 'custom' %}selected{% endif %}>Période personnalisée</option>
+                    </select>
+                </div>
+            </div>
+            <div class="control is-expanded" id="custom-date-fields" style="{% if selected_period != 'custom' %}display:none;{% endif %}">
+                <input type="date" class="input is-fullwidth" name="start_date" value="{{ start_date_filter|default:'' }}"> {# is-fullwidth #}
+            </div>
+            <div class="control is-expanded" id="custom-date-fields-end" style="{% if selected_period != 'custom' %}display:none;{% endif %}">
+                <input type="date" class="input is-fullwidth" name="end_date" value="{{ end_date_filter|default:'' }}"> {# is-fullwidth #}
+            </div>
+            <div class="control is-expanded">
+                <button style="background-color: #202569;" type="submit" class="button has-text-white is-fullwidth">Appliquer le filtre</button> {# is-fullwidth #}
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="columns is-multiline">
+    <div class="column is-one-quarter-desktop is-half-tablet is-full-mobile"> {# Adapte la largeur des colonnes #}
+        <div class="box has-text-centered">
+            <p class="heading is-size-7-mobile">Factures Totales</p> {# Réduit la taille sur mobile #}
+            <p class="title is-5 is-size-4-mobile">{{ total_invoices }}</p> {# Réduit la taille sur mobile #}
+        </div>
+    </div>
+    <div class="column is-one-quarter-desktop is-half-tablet is-full-mobile">
+        <div class="box has-text-centered">
+            <p class="heading is-size-7-mobile">Clients</p>
+            <p class="title is-5 is-size-4-mobile">{{ total_clients }}</p>
+        </div>
+    </div>
+    <div class="column is-one-quarter-desktop is-half-tablet is-full-mobile">
+        <div class="box has-text-centered">
+            <p class="heading is-size-7-mobile">Produits/Services</p>
+            <p class="title is-5 is-size-4-mobile">{{ total_products }}</p>
+        </div>
+    </div>
+    <div class="column is-one-quarter-desktop is-half-tablet is-full-mobile">
+        <div class="box has-text-centered">
+            <p class="heading is-size-7-mobile">Revenu Total (Payées)</p>
+            <p class="title is-5 is-size-4-mobile has-text-warning">{{ total_revenue|floatformat:2 }} FCFA</p>
+        </div>
+    </div>
+    <div class="column is-half-desktop is-full-mobile"> {# Passe en pleine largeur sur mobile #}
+        <div class="box has-text-centered">
+            <p class="heading is-size-7-mobile">Montant des Factures en Attente</p>
+            <p class="title is-5 is-size-4-mobile">{{ pending_invoices_amount|floatformat:2 }} FCFA</p>
+        </div>
+    </div>
+    <div class="column is-half-desktop is-full-mobile"> {# Passe en pleine largeur sur mobile #}
+        <div class="box has-text-centered">
+            <p class="heading is-size-7-mobile">Factures en Retard</p>
+            <p class="title is-5 is-size-4-mobile">{{ overdue_invoices_count }}</p>
+        </div>
+    </div>
+</div>
+
+<hr>
+
+<h2 class="title is-4 is-size-4-mobile">Tendances des Factures</h2> {# Réduit la taille sur mobile #}
+<div class="columns is-multiline">
+    <div class="column is-half-desktop is-full-mobile"> {# Passe en pleine largeur sur mobile #}
+        <div class="box">
+            <h3 class="subtitle is-5 is-size-5-mobile">Nombre de Factures par Mois</h3> 
+            <div class="chart-container">
+                <canvas id="invoicesChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="column is-half-desktop is-full-mobile"> {# Passe en pleine largeur sur mobile #}
+        <div class="box">
+            <h3 class="subtitle is-5 is-size-5-mobile">Revenu Brut par Mois (Factures payées)</h3> {# Réduit la taille sur mobile #}
+            <div class="chart-container">
+                <canvas id="revenueChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Logique pour afficher/masquer les champs de date personnalisés
+        const periodSelect = document.querySelector('select[name="period"]');
+        const customDateFields = document.querySelectorAll('#custom-date-fields, #custom-date-fields-end');
+
+        function toggleCustomDateFields() {
+            if (periodSelect.value === 'custom') {
+                customDateFields.forEach(field => field.style.display = 'block');
+            } else {
+                customDateFields.forEach(field => field.style.display = 'none');
+            }
+        }
+        periodSelect.addEventListener('change', toggleCustomDateFields);
+        toggleCustomDateFields(); // Appeler au chargement pour l'état initial
+
+        // Données passées par Django
+        const labels = {{ labels|safe }};
+        const invoicesData = {{ invoices_by_month_data|safe }};
+        const revenueData = {{ revenue_by_month_data|safe }};
+
+        // Graphique du nombre de factures
+        const invoicesCtx = document.getElementById('invoicesChart').getContext('2d');
+        new Chart(invoicesCtx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Nombre de Factures',
+                    data: invoicesData,
+                    backgroundColor: 'rgba(96, 175, 230, 0.2)', // Bleu clair Bulma
+                    borderColor: 'rgba(96, 175, 230, 1)',
+                    borderWidth: 1,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false, // TRÈS IMPORTANT pour la responsivité du graphique
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Nombre de Factures'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Mois'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: {
+                            font: {
+                                size: window.innerWidth <= 768 ? 10 : 12 // Réduire la taille de la légende sur mobile
+                            }
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        titleFont: {
+                            size: window.innerWidth <= 768 ? 12 : 14 // Réduire la taille du titre du tooltip
+                        },
+                        bodyFont: {
+                            size: window.innerWidth <= 768 ? 10 : 12 // Réduire la taille du corps du tooltip
+                        }
+                    }
+                }
+            }
+        });
+
+        // Graphique du revenu
+        const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+        new Chart(revenueCtx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Revenu Total (FCFA)',
+                    data: revenueData,
+                    backgroundColor: 'rgba(0, 209, 178, 0.6)', // Vert Bulma
+                    borderColor: 'rgba(0, 209, 178, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false, // TRÈS IMPORTANT pour la responsivité du graphique
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Revenu (FCFA)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Mois'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: {
+                            font: {
+                                size: window.innerWidth <= 768 ? 10 : 12 // Réduire la taille de la légende sur mobile
+                            }
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        titleFont: {
+                            size: window.innerWidth <= 768 ? 12 : 14 // Réduire la taille du titre du tooltip
+                        },
+                        bodyFont: {
+                            size: window.innerWidth <= 768 ? 10 : 12 // Réduire la taille du corps du tooltip
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+
+<hr>
+
+<h2 class="title is-5 is-size-4-mobile">Activité Récente</h2> 
+<div class="columns is-multiline"> 
+    <div class="column is-half-desktop is-full-mobile"> 
+        <div class="box">
+            <h3 class="subtitle is-5 is-size-5-mobile">5 Dernières Factures</h3>
+            {% if recent_invoices %}
+            <div class="table-container"> 
+                <table class="table is-striped is-hoverable is-fullwidth is-narrow"> 
+                    <thead>
+                        <tr>
+                            <th class="subtitle is-6">N° Facture</th>
+                            <th class="subtitle is-6">Client</th>
+                            <th class="subtitle is-6">Date</th>
+                            <th class="subtitle is-6">Montant</th>
+                            <th class="subtitle is-6">Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for invoice in recent_invoices %}
+                        <tr>
+                            <td><a href="{% url 'invoice_detail' invoice.pk %}">{{ invoice.invoice_number }}</a></td>
+                            <td class="subtitle is-6">{{ invoice.client.name }}</td>
+                            <td class="subtitle is-6">{{ invoice.issue_date|date:"d M Y" }}</td>
+                            <td class="subtitle is-6">{{ invoice.total_amount|floatformat:2 }} FCFA</td>
+                            <td class="subtitle is-6"><span class="tag is-small {{ invoice.status|lower }}">{{ invoice.get_status_display }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div> 
+            {% else %}
+            <p>Aucune facture récente.</p>
+            {% endif %}
+        </div>
+    </div>
+    <div class="column is-half-desktop is-full-mobile">
+        <div class="box">
+            <h3 class="subtitle is-5 is-size-5-mobile">5 Derniers Clients Ajoutés</h3> 
+            {% if recent_clients %}
+            <div class="table-container"> 
+                <table class="table is-striped is-hoverable is-fullwidth is-narrow"> {# is-narrow pour plus de compacité #}
+                    <thead>
+                        <tr>
+                            <th class="subtitle is-6">Nom</th>
+                            <th class="subtitle is-6">Email</th>
+                            <th class="subtitle is-6">Date d'ajout</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for client in recent_clients %}
+                        <tr>
+                            <td><a href="{% url 'client_detail' client.pk %}">{{ client.name }}</a></td>
+                            <td class="subtitle is-6">{{ client.email|default:"N/A" }}</td>
+                            <td class="subtitle is-6">{{ client.created_at|date:"d M Y" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div> {# FIN DIV table-container #}
+            {% else %}
+            <p>Aucun client récent.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends "core/base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1 class="title">Choisissez votre modèle de facture</h1>
+    <p>Sélectionnez un modèle pour commencer à créer votre facture.</p>
+    <hr>
+    <div class="columns is-multiline">
+        {% for template in templates %}
+        <div class="column is-4">
+            <div class="card">
+                <div class="card-image">
+                    <figure class="image is-4by3">
+                        <a href="#" class="open-modal-trigger" data-modal-target="preview-modal" data-preview-url="{{ template.preview_image.url }}">
+                            {% if template.preview_image %}
+                                <img src="{{ template.preview_image.url }}" alt="Aperçu du modèle {{ template.name }}">
+                            {% else %}
+                                <img src="https://via.placeholder.com/600x450.png?text=Pas+d'aperçu" alt="Pas d'aperçu disponible">
+                            {% endif %}
+                        </a>
+                    </figure>
+                </div>
+                <div class="card-content has-text-centered">
+                    <p class="title is-5">{{ template.name }}</p>
+                    <a href="{% url 'invoice_create' %}?template_id={{ template.id }}" class="button is-link is-fullwidth">
+                        Utiliser ce modèle
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="column is-12">
+            <p>Aucun modèle de facture n'a été créé.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div id="preview-modal" class="modal">
+    <div class="modal-background"></div>
+    <div class="modal-content is-medium">
+        <p class="image">
+            <img id="modal-preview-image" src="" alt="Aperçu de la facture">
+        </p>
+    </div>
+    <button class="modal-close is-large" aria-label="close"></button>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const modal = document.getElementById('preview-modal');
+        const modalImage = document.getElementById('modal-preview-image');
+        const modalTriggers = document.querySelectorAll('.open-modal-trigger');
+        const modalCloseButtons = document.querySelectorAll('.modal-background, .modal-close');
+
+        modalTriggers.forEach(trigger => {
+            trigger.addEventListener('click', (event) => {
+                event.preventDefault(); // Empêche le lien de recharger la page
+                const imageUrl = trigger.getAttribute('data-preview-url');
+                modalImage.src = imageUrl;
+                modal.classList.add('is-active');
+            });
+        });
+
+        modalCloseButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                modal.classList.remove('is-active');
+                modalImage.src = ''; // Réinitialise l'image pour éviter le flash de l'ancienne image
+            });
+        });
+
+        // Fermer la modale en appuyant sur la touche 'Échap'
+        document.addEventListener('keydown', (event) => {
+            if (event.key === "Escape" && modal.classList.contains('is-active')) {
+                modal.classList.remove('is-active');
+                modalImage.src = '';
+            }
+        });
+    });
+</script>
+
+{% endblock %}

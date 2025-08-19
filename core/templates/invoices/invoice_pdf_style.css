@@ -1,0 +1,187 @@
+/* core/templates/invoices/invoice_pdf_style.css */
+@page {
+    size: A4;
+    margin: 20mm;
+    @top-center { content: "Facture N°{{ invoice.invoice_number }}"; font-size: 8pt; color: #777; }
+    @bottom-center { content: "Page " counter(page) " sur " counter(pages); font-size: 8pt; color: #777; }
+}
+
+body {
+    font-family: 'Arial', sans-serif; /* Une police plus courante */
+    font-size: 10pt;
+    line-height: 1.6;
+    color: #333;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20mm;
+    border-bottom: 2px solid #0056b3; /* Couleur thème, ex: bleu foncé */
+    padding-bottom: 10mm;
+}
+
+.company-logo-container {
+    width: 25%; /* Ajustez la largeur du conteneur pour le logo */
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.company-logo {
+    max-width: 100%; /* Le logo prend toute la largeur du conteneur */
+    max-height: 25mm; /* Hauteur maximale pour le logo */
+    object-fit: contain; /* S'assure que le logo ne se déforme pas */
+}
+
+.company-info {
+    width: 45%;
+    text-align: left;
+    margin-left: 10mm; /* Espace entre logo et infos entreprise */
+}
+
+.company-info h1 {
+    font-size: 16pt;
+    margin-bottom: 5px;
+    color: #0056b3; /* Même couleur que le bord de l'entête */
+}
+
+.invoice-title {
+    width: 30%;
+    text-align: right;
+    margin-left: auto;
+}
+
+.invoice-title h2 {
+    font-size: 20pt;
+    margin-bottom: 10px;
+    color: #0056b3;
+}
+
+.invoice-title p {
+    margin: 0;
+    font-size: 10pt;
+}
+
+.addresses {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15mm;
+}
+
+.client-info {
+    width: 100%; /* Prend toute la largeur si pas de colonne d'adresse émettrice */
+    border: 1px solid #ddd;
+    padding: 10px;
+    background-color: #f9f9f9;
+}
+
+.client-info h3 {
+    font-size: 12pt;
+    margin-top: 0;
+    margin-bottom: 5px;
+    color: #0056b3;
+}
+
+.items-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20mm;
+}
+
+.items-table th, .items-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+.items-table th {
+    background-color: #e6f0fa; /* Un bleu très clair */
+    font-weight: bold;
+    color: #333;
+    text-transform: uppercase;
+    font-size: 9pt;
+}
+
+.items-table td {
+    font-size: 9pt;
+}
+
+.items-table .qty, .items-table .price, .items-table .tax, .items-table .total {
+    text-align: right;
+    width: 12%; /* Ajustez les largeurs pour équilibrer les colonnes */
+}
+.items-table .description {
+    width: 35%;
+}
+
+.totals-and-notes {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10mm;
+}
+
+.totals {
+    width: 45%;
+    float: right; /* Pour forcer l'alignement à droite si pas de flexbox direct */
+}
+
+.totals-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.totals-table td {
+    padding: 5px;
+    border-bottom: 1px dashed #eee;
+    font-size: 10pt;
+}
+
+.totals-table tr:last-child td {
+    border-bottom: none;
+    font-weight: bold;
+    font-size: 14pt;
+    padding-top: 10px;
+    border-top: 2px solid #0056b3; /* Ligne épaisse sous le total */
+}
+
+.totals-table td:first-child {
+    text-align: left;
+}
+
+.totals-table td:last-child {
+    text-align: right;
+}
+
+.notes {
+    width: 50%; /* Près des totaux */
+    margin-right: 5%; /* Espace entre les deux */
+    border: 1px solid #ddd;
+    padding: 10px;
+    background-color: #f9f9f9;
+}
+
+.notes h3, .bank-details h3 {
+    font-size: 12pt;
+    margin-top: 0;
+    margin-bottom: 5px;
+    color: #0056b3;
+}
+
+.bank-details {
+    clear: both; /* S'assure que cela apparaît en dessous de tout flottement */
+    margin-top: 20mm;
+    border-top: 1px solid #eee;
+    padding-top: 10mm;
+    font-size: 9pt;
+}
+
+.footer {
+    text-align: center;
+    margin-top: 30mm;
+    font-size: 8pt;
+    color: #777;
+    border-top: 1px solid #eee;
+    padding-top: 5mm;
+}

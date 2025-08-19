@@ -1,0 +1,43 @@
+{% extends 'core/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Envoyer Facture {{ invoice.invoice_number }} par E-mail{% endblock %}
+
+{% block content %}
+<h1 class="title is-1">Envoyer la facture {{ invoice.invoice_number }}</h1>
+<p class="subtitle is-4">À : {{ invoice.client.name }}</p>
+
+<div class="box">
+    <form method="post" action="{% url 'invoice_send_email' invoice.pk %}">
+        {% csrf_token %}
+
+        <div class="field">
+            <label class="label" for="id_recipient_email">Adresse E-mail du destinataire</label>
+            <div class="control">
+                <input class="input" type="email" name="recipient_email" id="id_recipient_email" value="{{ default_email }}" required>
+            </div>
+            <p class="help">L'adresse e-mail par défaut du client est pré-remplie.</p>
+        </div>
+
+        <div class="field">
+            <label class="label" for="id_custom_message">Message personnalisé (facultatif)</label>
+            <div class="control">
+                <textarea class="textarea" name="custom_message" id="id_custom_message" rows="5" placeholder="Ajoutez un message personnel ici..."></textarea>
+            </div>
+            <p class="help">Ce message sera ajouté au début de l'e-mail.</p>
+        </div>
+
+        <div class="field is-grouped">
+            <div class="control">
+                <button type="submit" class="button is-primary">
+                    <span class="icon"><i class="fas fa-paper-plane"></i></span>
+                    <span>Envoyer la Facture</span>
+                </button>
+            </div>
+            <div class="control">
+                <a href="{% url 'invoice_detail' invoice.pk %}" class="button is-light">Annuler</a>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

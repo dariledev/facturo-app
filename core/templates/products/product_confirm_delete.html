@@ -1,0 +1,24 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Confirmer la suppression du produit{% endblock %}
+
+{% block content %}
+<h1 class="title is-1 has-text-danger">Supprimer le Produit/Service</h1>
+
+<div class="notification is-danger">
+    <p>Êtes-vous sûr de vouloir supprimer le produit/service : <strong>{{ product.name }}</strong> ?</p>
+    <p>Cette action est irréversible.</p>
+</div>
+
+<form method="post">
+    {% csrf_token %}
+    <div class="field is-grouped">
+        <div class="control">
+            <button type="submit" class="button is-danger">Oui, Supprimer</button>
+        </div>
+        <div class="control">
+            <a href="{% url 'product_list' %}" class="button is-light">Annuler</a>
+        </div>
+    </div>
+</form>
+{% endblock %}

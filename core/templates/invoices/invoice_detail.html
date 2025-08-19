@@ -1,0 +1,222 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Facture {{ invoice.invoice_number }}{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container is-fluid">
+        {# Fil d'Ariane #}
+        <nav class="breadcrumb is-small is-centered mb-4" aria-label="breadcrumbs">
+            <ul>
+                <li><a href="{% url 'home' %}">Accueil</a></li>
+                <li><a href="{% url 'invoice_list' %}">Factures</a></li>
+                <li class="is-active"><a href="#" aria-current="page">{{ invoice.invoice_number }}</a></li>
+            </ul>
+        </nav>
+
+        {# Titre et Statut #}
+        <div class="has-text-centered">
+            <h1 class="title is-4 is-size-5-mobile">Facture n° {{ invoice.invoice_number }}</h1>
+            <span class="tag is-large {% if invoice.status == 'Paid' %}is-success{% elif invoice.status == 'Sent' %}is-info{% elif invoice.status == 'Overdue' %}is-danger{% else %}is-light{% endif %} ml-3" id="invoice-status-tag">
+                {{ invoice.get_status_display }}
+            </span>
+        </div>
+
+        <hr>
+
+        {# Bloc des Boutons - NOUVEAU CODE #}
+        <div class="buttons is-centered is-grouped is-grouped-multiline">
+            <a href="{% url 'invoice_update' invoice.pk %}" class="button is-info is-light is-small is-fullwidth-mobile">
+                <span class="icon is-small"><i class="fas fa-edit"></i></span>
+                <span>Modifier</span>
+            </a>
+            <a href="{% url 'invoice_delete' invoice.pk %}" class="button is-danger is-light is-small is-fullwidth-mobile">
+                <span class="icon is-small"><i class="fas fa-trash"></i></span>
+                <span>Supprimer</span>
+            </a>
+            <a href="{% url 'invoice_pdf' invoice.pk %}" class="button is-primary is-light is-small is-fullwidth-mobile">
+                <span class="icon is-small"><i class="fas fa-download"></i></span>
+                <span>Télécharger PDF</span>
+            </a>
+            <a href="{% url 'invoice_send_email' invoice.pk %}" class="button is-link is-light is-small is-fullwidth-mobile">
+                <span class="icon is-small"><i class="fas fa-envelope"></i></span>
+                <span>Envoyer par Email</span>
+            </a>
+            {# NOUVEAU BOUTON DE PARTAGE WHATSAPP #}
+            <a href="https://wa.me/?text=Bonjour,%20voici%20votre%20facture%20n°%20{{ invoice.invoice_number }}.%20Lien:%20{{ request.scheme }}://{{ request.get_host }}{% url 'invoice_pdf' invoice.pk %}" 
+               target="_blank" class="button is-success is-light is-small is-fullwidth-mobile">
+                <span class="icon is-small"><i class="fab fa-whatsapp"></i></span>
+                <span>Partager par WhatsApp</span>
+            </a>
+            {% if invoice.status != 'Paid' %}
+            <button id="mark-as-paid-button" class="button is-success is-outlined is-small is-fullwidth-mobile">
+                <span class="icon is-small"><i class="fas fa-check-circle"></i></span>
+                <span>Marquer comme payée</span>
+            </button>
+            {% endif %}
+        </div>
+
+        <hr>
+        {# ... Reste du code non modifié ... #}
+        {# Informations Client et Détails Facture #}
+        <div class="columns is-multiline is-centered">
+            <div class="column is-full-mobile is-half-tablet is-half-desktop has-text-centered-mobile">
+                <h3 class="title is-5 is-size-6-mobile">Informations Client</h3>
+                <p><strong>Nom:</strong> {{ invoice.client.name }}</p>
+                <p><strong>Email:</strong> {{ invoice.client.email }}</p>
+                <p><strong>Téléphone:</strong> {{ invoice.client.phone }}</p>
+                <p><strong>Adresse:</strong> {{ invoice.client.address }}</p>
+            </div>
+            <div class="column is-full-mobile is-half-tablet is-half-desktop has-text-centered-mobile">
+                <h3 class="title is-5 is-size-6-mobile">Détails de la Facture</h3>
+                <p><strong>Date d'émission:</strong> {{ invoice.issue_date|date:"d M Y" }}</p>
+                <p><strong>Date d'échéance:</strong> {{ invoice.due_date|default:"N/A"|date:"d M Y" }}</p>
+                <p><strong>Statut:</strong> <strong class="{% if invoice.status == 'Paid' %}has-text-success{% elif invoice.status == 'Sent' %}has-text-info{% elif invoice.status == 'Overdue' %}has-text-danger{% else %}has-text-grey{% endif %} details-status-text">{{ invoice.get_status_display }}</strong></p>
+            </div>
+        </div>
+
+        <hr>
+
+        {# Articles de la Facture #}
+        <h3 class="title is-5 is-size-6-mobile has-text-centered">Articles de la Facture</h3>
+        <div class="table-container">
+            <table class="table is-bordered is-striped is-hoverable is-fullwidth is-narrow-mobile">
+                <thead>
+                    <tr>
+                        <th class="is-size-7-mobile">#</th>
+                        <th class="is-size-7-mobile">Produit/Service</th>
+                        <th class="has-text-right is-size-7-mobile is-hidden-mobile">Quantité</th>
+                        <th class="has-text-right is-size-7-mobile is-hidden-mobile">Prix Unitaire</th>
+                        <th class="has-text-right is-size-7-mobile is-hidden-mobile">TVA (%)</th>
+                        <th class="has-text-right is-size-7-mobile is-hidden-mobile">Total HT</th>
+                        <th class="has-text-right is-size-7-mobile">Total TTC</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in invoice.items.all %}
+                    <tr>
+                        <td class="is-size-7-mobile">{{ forloop.counter }}</td>
+                        <td class="is-size-7-mobile">
+                            <strong>{{ item.product.name }}</strong><br>
+                            <small class="is-hidden-mobile">{{ item.product.description|default_if_none:"" }}</small>
+                        </td>
+                        <td class="has-text-right is-size-7-mobile is-hidden-mobile">{{ item.quantity }}</td>
+                        <td class="has-text-right is-size-7-mobile is-hidden-mobile">{{ item.unit_price|floatformat:2 }} F CFA</td>
+                        <td class="has-text-right is-size-7-mobile is-hidden-mobile">{{ item.tax_rate|floatformat:2 }}</td>
+                        <td class="has-text-right is-size-7-mobile is-hidden-mobile">{{ item.get_total_price_before_tax|floatformat:2 }} F CFA</td>
+                        <td class="has-text-right is-size-7-mobile">{{ item.total_price|floatformat:2 }} F CFA</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="has-text-centered">Aucun article dans cette facture.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="6" class="has-text-right has-text-weight-bold is-size-6-mobile">Total à payer :</td>
+                        <td colspan="1" class="has-text-right has-text-weight-bold is-size-6-mobile">{{ invoice.total_amount|floatformat:2 }} F CFA</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        {# Notes / Conditions de paiement #}
+        {% if invoice.notes %}
+        <h3 class="title is-5 is-size-6-mobile mt-6 has-text-centered">Notes / Conditions de paiement</h3>
+        <div class="content has-text-centered-mobile">
+            <p>{{ invoice.notes|linebreaksbr }}</p>
+        </div>
+        {% endif %}
+
+        {# Bouton de retour #}
+        <div class="has-text-centered mt-5">
+            <a href="{% url 'invoice_list' %}" class="button is-light is-fullwidth-mobile">Retour à la liste des factures</a>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const markAsPaidButton = document.getElementById('mark-as-paid-button');
+        const invoiceStatusTag = document.getElementById('invoice-status-tag');
+        const currentInvoiceId = {{ invoice.pk }};
+        const detailsStatusText = document.querySelector('.details-status-text');
+
+        if (markAsPaidButton) {
+            markAsPaidButton.addEventListener('click', async () => {
+                const confirmMark = confirm("Voulez-vous vraiment marquer cette facture comme payée ?");
+                if (!confirmMark) { return; }
+                try {
+                    const response = await fetch(`/invoices/${currentInvoiceId}/mark-as-paid/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        }
+                    });
+                    const data = await response.json();
+                    if (response.ok) {
+                        invoiceStatusTag.textContent = 'Payée';
+                        invoiceStatusTag.classList.remove('is-info', 'is-danger', 'is-light', 'is-warning');
+                        invoiceStatusTag.classList.add('is-success');
+                        if (detailsStatusText) {
+                            detailsStatusText.textContent = 'Payée';
+                            detailsStatusText.classList.remove('has-text-info', 'has-text-danger', 'has-text-grey', 'has-text-warning');
+                            detailsStatusText.classList.add('has-text-success');
+                        }
+                        markAsPaidButton.remove();
+                        displayBulmaNotification(data.message, 'success');
+                    } else {
+                        displayBulmaNotification(data.message || 'Une erreur est survenue lors du marquage de la facture.', 'danger');
+                    }
+                } catch (error) {
+                    console.error('Erreur lors de la requête AJAX:', error);
+                    displayBulmaNotification('Impossible de communiquer avec le serveur.', 'danger');
+                }
+            });
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.startsWith(name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        function displayBulmaNotification(message, type) {
+            const container = document.querySelector('.container.is-fluid');
+            if (container) {
+                const notificationDiv = document.createElement('div');
+                notificationDiv.classList.add('notification', `is-${type}`);
+                notificationDiv.innerHTML = `
+                    <button class="delete"></button>
+                    ${message}
+                `;
+                container.prepend(notificationDiv);
+                notificationDiv.querySelector('.delete').addEventListener('click', () => {
+                    notificationDiv.parentNode.removeChild(notificationDiv);
+                });
+                setTimeout(() => {
+                    if (notificationDiv.parentNode) {
+                        notificationDiv.parentNode.removeChild(notificationDiv);
+                    }
+                }, 5000);
+            }
+        }
+    });
+</script>
+{% endblock %}

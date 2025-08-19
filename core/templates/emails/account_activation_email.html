@@ -1,0 +1,13 @@
+{% autoescape off %}
+Bonjour {{ user.username }},
+
+Merci de vous être inscrit sur Facturo !
+Veuillez cliquer sur le lien ci-dessous pour activer votre compte :
+
+{{ protocol }}://{{ domain }}{% url 'activate_account' activation_token=token %}
+
+Ce lien est valide pendant 24 heures. Si vous n'avez pas demandé cette inscription, veuillez ignorer cet e-mail.
+
+Cordialement,
+L'équipe Facturo
+{% endautoescape %}

@@ -1,0 +1,18 @@
+{% extends "core/base.html" %}
+{% block content %}
+<section class="section has-text-centered">
+    <div class="container">
+        <h1 class="title is-2 has-text-danger">Échec de la formation</h1>
+        <p class="subtitle is-4">Votre score final de **{{ partenaire.score }}%** est inférieur au seuil requis de 50%.</p>
+        <p>Vous n'avez malheureusement pas validé cette étape. Vous pouvez réessayer la formation plus tard.</p>
+        <hr>
+        <div class="box">
+            <p><strong>Votre score:</strong> {{ partenaire.score }}%</p>
+            <p><strong>Statut:</strong> {{ partenaire.get_status_display }}</p>
+        </div>
+        <a href="{% url 'dashboard' %}" class="button is-primary is-large is-rounded mt-5">
+            Retourner au tableau de bord
+        </a>
+    </div>
+</section>
+{% endblock %}

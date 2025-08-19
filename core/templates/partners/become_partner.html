@@ -1,0 +1,29 @@
+{% extends "core/base.html" %}
+{% block content %}
+<section class="section">
+    <div class="container has-text-centered">
+        <h1 class="title is-2 has-text-primary">{{ page_title }}</h1>
+        <p class="subtitle is-5">{{ description }}</p>
+        <hr>
+        <div class="columns is-centered">
+            <div class="column is-8">
+                <div class="box has-text-left">
+                    <h2 class="title is-4 has-text-dark">Avantages</h2>
+                    <ul>
+                        {% for benefit in benefits %}
+                        <li><span class="icon has-text-success"><i class="fas fa-check-circle"></i></span> {{ benefit }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <form action="{% url 'start_training' %}" method="post">
+            {% csrf_token %}
+            <button class="button is-primary is-large is-rounded mt-5" type="submit">
+                <span class="icon"><i class="fas fa-play"></i></span>
+                <span>{{ call_to_action }}</span>
+            </button>
+        </form>
+    </div>
+</section>
+{% endblock %}

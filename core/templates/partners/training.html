@@ -1,0 +1,54 @@
+{% extends "core/base.html" %}
+{% block content %}
+<section class="section">
+    <div class="container">
+        <h1 class="title is-3 has-text-primary">{{ formation.title }}</h1>
+        <p class="subtitle is-6">Question {{ current_question_number }} sur {{ total_questions }}</p>
+        <progress class="progress is-primary" value="{{ partenaire.progression }}" max="100"></progress>
+        <div class="box">
+            <p class="is-size-5 mb-4 has-text-weight-semibold">{{ question_data.question }}</p>
+            <form method="post">
+                {% csrf_token %}
+                <div class="field">
+                    {% if question_data.type == "choix_multiples" %}
+                        <div class="control">
+                            {% for option in question_data.options %}
+                                <label class="radio">
+                                    <input type="radio" name="answer" value="{{ option }}" required>
+                                    {{ option }}
+                                </label><br>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <label class="label">Votre réponse</label>
+                        <div class="control">
+                            <input class="input" type="text" name="answer" required>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="control">
+                    <button class="button is-primary" type="submit">Valider</button>
+                </div>
+            </form>
+        </div>
+
+        <p class="has-text-right is-size-6 mt-4">
+            Score actuel : <strong class="has-text-success">{{ partenaire.score }} / 100</strong>
+            <br>
+            {% if attempts_remaining > 0 %}
+            Tentatives restantes pour cette question : <strong>{{ attempts_remaining }}</strong>
+            {% endif %}
+        </p>
+
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+            <div class="notification {% if message.tags %}is-{{ message.tags }}{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

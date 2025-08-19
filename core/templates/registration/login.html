@@ -1,0 +1,37 @@
+{% extends 'core/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Se connecter{% endblock %}
+
+{% block content %}
+<div class="container is-max-desktop my-6">
+    <div class="box">
+        <h1 class="title is-4 has-text-centered">Se connecter</h1>
+        <hr>
+        <form method="post">
+            {% csrf_token %}
+            {{ form|crispy }}
+            
+            <div class="field mt-5">
+                <button type="submit" class="button is-primary is-fullwidth">
+                    Se connecter
+                </button>
+            </div>
+            
+            {# Le lien pour le mot de passe oublié #}
+            <div class="has-text-centered mt-4">
+                <p>
+                    <a href="{% url 'password_reset' %}" class="has-text-link">Mot de passe oublié ?</a>
+                </p>
+            </div>
+        </form>
+    </div>
+
+    {# Lien vers la page d'inscription, pour une meilleure UX #}
+    <div class="has-text-centered mt-4">
+        <p>Vous n'avez pas encore de compte ? 
+            <a href="{% url 'register' %}" class="has-text-link">Créer un compte</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

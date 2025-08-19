@@ -1,0 +1,254 @@
+{% extends 'core/base.html' %}
+{% load crispy_forms_tags %} {# Gardez ceci pour le formulaire principal de la facture #}
+
+{% block title %}{% if invoice %}Modifier{% else %}Créer{% endif %} Facture{% endblock %}
+
+{% block content %}
+<h1 class="title is-4">{% if invoice %}Modifier{% else %}Créer{% endif %} la Facture</h1>
+
+<form method="post" class="box">
+    {% csrf_token %}
+
+    <h2 class="title is-5">Informations Générales</h2>
+
+    {{ form|crispy }}
+
+    <hr>
+
+    <h2 class="title is-4">Articles de la Facture</h2>
+    <div id="invoice-items">
+        {{ items.management_form }}
+        {% for form in items %}
+            <div class="box item-formset" style="margin-bottom: 1em;">
+                <h3 class="subtitle is-5">Article #{{ forloop.counter }}</h3>
+                {% if form.instance.pk %}<p class="help">ID Article: {{ form.instance.pk }}</p>{% endif %}
+                
+
+                {% if form.DELETE %}
+                    <div class="field">
+                        <label class="checkbox">
+                            {{ form.DELETE }} <span class="has-text-danger">Supprimer cet article</span>
+                        </label>
+                    </div>
+                {% endif %}
+
+                <div class="columns is-multiline">
+                    <div class="column is-one-third">
+                        <div class="field">
+                            <label class="label">{{ form.product_choice.label }}</label>
+                            <div class="control">
+                                {{ form.product_choice }}
+                            </div>
+                            {% if form.product_choice.errors %}
+                                <p class="help is-danger">{{ form.product_choice.errors }}</p>
+                            {% endif %}
+                            {% if form.product_choice.help_text %}
+                                <p class="help">{{ form.product_choice.help_text }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="column is-one-third">
+                        <div class="field">
+                            <label class="label">{{ form.description.label }}</label>
+                            <div class="control">
+                                {{ form.description }}
+                            </div>
+                            {% if form.description.errors %}
+                                <p class="help is-danger">{{ form.description.errors }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="column is-one-sixth">
+                        <div class="field">
+                            <label class="label">{{ form.quantity.label }}</label>
+                            <div class="control">
+                                {{ form.quantity }}
+                            </div>
+                            {% if form.quantity.errors %}
+                                <p class="help is-danger">{{ form.quantity.errors }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="column is-one-sixth">
+                        <div class="field">
+                            <label class="label">{{ form.unit_price.label }}</label>
+                            <div class="control">
+                                {{ form.unit_price }}
+                            </div>
+                            {% if form.unit_price.errors %}
+                                <p class="help is-danger">{{ form.unit_price.errors }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="column is-one-sixth">
+                        <div class="field">
+                            <label class="label">{{ form.tax_rate.label }}</label>
+                            <div class="control">
+                                {{ form.tax_rate }}
+                            </div>
+                            {% if form.tax_rate.errors %}
+                                <p class="help is-danger">{{ form.tax_rate.errors }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+            </div>
+        {% endfor %}
+    </div>
+    <button type="button" id="add-item-button" class="button is-info is-small">
+        <span class="icon"><i class="fas fa-plus"></i></span>
+        <span>Ajouter un article</span>
+    </button>
+
+    <hr>
+
+    <div class="field is-grouped">
+        <div class="control">
+            <button type="submit" class="button is-link">
+                {% if invoice %}Mettre à jour{% else %}Créer{% endif %} Facture
+            </button>
+        </div>
+        <div class="control">
+            <a href="{% url 'invoice_list' %}" class="button is-light">Annuler</a>
+        </div>
+    </div>
+</form>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const addItemButton = document.getElementById('add-item-button');
+        const invoiceItemsDiv = document.getElementById('invoice-items');
+        const managementForm = document.querySelector('#invoice-items > [name$="-TOTAL_FORMS"]'); // Utilisation de $ pour cibler la fin du nom
+
+        function applyBulmaClassesToForm(formElement) {
+            // Appliquer les classes Bulma aux champs du nouveau formulaire
+            formElement.querySelectorAll('input, select, textarea').forEach(input => {
+                if (input.type !== 'checkbox' && input.type !== 'radio' && !input.classList.contains('button')) {
+                    input.classList.add('input');
+                    if (input.type === 'textarea') {
+                        input.classList.add('textarea');
+                    }
+                    if (input.tagName === 'SELECT') {
+                        input.classList.add('select'); // Bulma nécessite une div autour du select pour le style
+                        const selectWrapper = document.createElement('div');
+                        selectWrapper.classList.add('select', 'is-fullwidth');
+                        input.parentNode.insertBefore(selectWrapper, input);
+                        selectWrapper.appendChild(input);
+                    }
+                }
+            });
+        }
+
+        addItemButton.addEventListener('click', function() {
+            const currentForms = parseInt(managementForm.value);
+            const newFormIndex = currentForms;
+
+            // Récupérer le formulaire vide du formset, Django l'aura déjà rendu avec __prefix__
+            const emptyFormHtml = `
+                <div class="box item-formset" style="margin-bottom: 1em;">
+                    <h3 class="subtitle is-5">Article #${newFormIndex + 1}</h3>
+                    <div class="field">
+                        <label class="checkbox">
+                            <input type="checkbox" name="item-${newFormIndex}-DELETE" id="id_item-${newFormIndex}-DELETE"> <span class="has-text-danger">Supprimer cet article</span>
+                        </label>
+                    </div>
+                    <div class="columns is-multiline">
+                        <div class="column is-one-third">
+                            <div class="field">
+                                <label class="label" for="id_item-${newFormIndex}-product_choice">Choisir un produit existant</label>
+                                <div class="control">
+                                    <select name="item-${newFormIndex}-product_choice" id="id_item-${newFormIndex}-product_choice" class="select is-fullwidth">
+                                        <option value="">--- Non lié à un produit ---</option>
+                                        {% for product in items.empty_form.product_choice.field.queryset %}
+                                            <option value="{{ product.pk }}">{{ product.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-one-third">
+                            <div class="field">
+                                <label class="label" for="id_item-${newFormIndex}-description">Description</label>
+                                <div class="control">
+                                    <input type="text" name="item-${newFormIndex}-description" id="id_item-${newFormIndex}-description" class="input" placeholder="Description de l'article">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-one-sixth">
+                            <div class="field">
+                                <label class="label" for="id_item-${newFormIndex}-quantity">Quantité</label>
+                                <div class="control">
+                                    <input type="number" name="item-${newFormIndex}-quantity" id="id_item-${newFormIndex}-quantity" class="input" value="1" min="1">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-one-sixth">
+                            <div class="field">
+                                <label class="label" for="id_item-${newFormIndex}-unit_price">Prix unitaire</label>
+                                <div class="control">
+                                    <input type="number" name="item-${newFormIndex}-unit_price" id="id_item-${newFormIndex}-unit_price" class="input" step="0.01" value="0.00">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-one-sixth">
+                            <div class="field">
+                                <label class="label" for="id_item-${newFormIndex}-tax_rate">TVA (%)</label>
+                                <div class="control">
+                                    <input type="number" name="item-${newFormIndex}-tax_rate" id="id_item-${newFormIndex}-tax_rate" class="input" step="0.01" value="20.00">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" name="item-${newFormIndex}-id" id="id_item-${newFormIndex}-id">
+                    <input type="hidden" name="item-${newFormIndex}-invoice" id="id_item-${newFormIndex}-invoice" value="{% if invoice %}{{ invoice.pk }}{% endif %}">
+                </div>
+            `.replace(/__prefix__/g, newFormIndex); // Remplacez __prefix__ par le nouvel index
+
+            const newFormDiv = document.createElement('div');
+            newFormDiv.innerHTML = emptyFormHtml;
+            invoiceItemsDiv.appendChild(newFormDiv.firstElementChild); // Ajoute le div du formulaire
+
+            // Mettez à jour le total des formulaires
+            managementForm.value = currentForms + 1;
+        });
+
+        invoiceItemsDiv.addEventListener('change', function(event) {
+            if (event.target.matches('[id$="-product_choice"]')) {
+                const selectElement = event.target;
+                const formPrefix = selectElement.id.split('-')[1];
+                const descriptionInput = document.getElementById(`id_item-${formPrefix}-description`);
+                const unitPriceInput = document.getElementById(`id_item-${formPrefix}-unit_price`);
+                const taxRateInput = document.getElementById(`id_item-${formPrefix}-tax_rate`);
+
+                const selectedOption = selectElement.options[selectElement.selectedIndex];
+                if (selectedOption && selectedOption.value) {
+                    const productId = selectedOption.value;
+                    fetch(`/api/products/${productId}/`)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            descriptionInput.value = data.name;
+                            unitPriceInput.value = parseFloat(data.unit_price).toFixed(2);
+                            taxRateInput.value = parseFloat(data.tax_rate).toFixed(2);
+                        })
+                        .catch(error => console.error('Erreur lors de la récupération des détails du produit:', error));
+                } else {
+                    descriptionInput.value = '';
+                    unitPriceInput.value = '';
+                    taxRateInput.value = '';
+                }
+            }
+        });
+
+        // Appliquer les classes Bulma aux formulaires déjà existants au chargement de la page
+        invoiceItemsDiv.querySelectorAll('.item-formset').forEach(formsetDiv => {
+            applyBulmaClassesToForm(formsetDiv);
+        });
+    });
+</script>
+{% endblock %}

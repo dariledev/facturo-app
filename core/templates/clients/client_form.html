@@ -1,0 +1,23 @@
+ {% extends 'core/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{% if client %}Modifier{% else %}Créer{% endif %} Client{% endblock %}
+
+{% block content %}
+<h1 class="title is-4">{% if client %}Modifier{% else %}Créer{% endif %} le Client</h1>
+
+<form method="post" class="box">
+    {% csrf_token %}
+    {{ form|crispy }} {# Utilisez crispy si installé #}
+    <div class="field is-grouped">
+        <div class="control">
+            <button type="submit" class="button is-link">
+                {% if client %}Mettre à jour{% else %}Créer{% endif %}
+            </button>
+        </div>
+        <div class="control">
+            <a href="{% url 'client_list' %}" class="button is-light">Annuler</a>
+        </div>
+    </div>
+</form>
+{% endblock %}

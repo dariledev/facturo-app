@@ -1,0 +1,119 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Support Facturo - Aide et Contact{% endblock %}
+
+
+{% block content %}
+
+        <h2 class="title is-4 has-text-centered mb-4 is-size-5-mobile">Vous n'avez pas trouvé votre réponse ?</h2>
+        <div class="columns is-centered">
+            <div class="column is-12-mobile is-8-desktop">
+                <div class="box has-background-light p-5">
+                    <h3 class="title is-5 has-text-primary mb-4 is-size-6-mobile">Envoyer une demande de support</h3>
+                    <p class="subtitle is-6 mb-4 has-text-grey-dark is-size-7-mobile">Pour toute question technique, bug ou demande spécifique, veuillez utiliser ce formulaire. Nous nous engageons à vous répondre dans les **24 heures ouvrables**.</p>
+
+                    <form action="{% url 'submit_support_request' %}" method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="field">
+                            <label class="label is-size-7-mobile" for="id_name">Votre Nom Complet</label>
+                            <div class="control">
+                                <input class="input" type="text" id="id_name" name="name" placeholder="Votre nom" required {% if user.is_authenticated %}value="{{ user.get_full_name|default:user.username }}"{% endif %}>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label class="label is-size-7-mobile" for="id_email">Votre Email</label>
+                            <div class="control">
+                                <input class="input" type="email" id="id_email" name="email" placeholder="votre@email.com" required {% if user.is_authenticated %}value="{{ user.email }}"{% endif %}>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label class="label is-size-7-mobile" for="id_subject">Sujet de la demande</label>
+                            <div class="control">
+                                <div class="select is-fullwidth">
+                                    <select id="id_subject" name="subject" required>
+                                        <option value="">Sélectionnez un sujet</option>
+                                        <option value="Problème Technique">Problème Technique</option>
+                                        <option value="Question Fonctionnelle">Question Fonctionnelle</option>
+                                        <option value="Suggestion">Suggestion</option>
+                                        <option value="Autre">Autre</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label class="label is-size-7-mobile" for="id_description">Description du problème</label>
+                            <div class="control">
+                                <textarea class="textarea" id="id_description" name="description" placeholder="Décrivez votre problème ou votre question en détail..." rows="5" required></textarea>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label class="label is-size-7-mobile" for="id_attachment">Joindre une capture d'écran (facultatif)</label>
+                            <div class="file has-name is-fullwidth">
+                                <label class="file-label">
+                                    <input class="file-input" type="file" name="attachment" id="id_attachment" accept="image/*,.pdf">
+                                    <span class="file-cta">
+                                        <span class="file-icon">
+                                            <i class="fas fa-upload"></i>
+                                        </span>
+                                        <span class="file-label is-size-7-mobile">
+                                            Choisir un fichier…
+                                        </span>
+                                    </span>
+                                    <span class="file-name is-size-7-mobile" id="file-name-display">
+                                        Aucun fichier sélectionné
+                                    </span>
+                                </label>
+                            </div>
+                            <p class="help is-size-7-mobile">Formats acceptés : Images (PNG, JPG), PDF</p>
+                        </div>
+
+                        <div class="field is-grouped is-grouped-centered mt-5">
+                            <div class="control is-expanded">
+                                <button type="submit" class="button is-primary is-small is-fullwidth">
+                                    <span class="icon is-medium"><i class="fas fa-paper-plane"></i></span>
+                                    <span>Envoyer la demande</span>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <hr class="my-6">
+
+        {# Section Autres Contacts #}
+        <h2 class="title is-3 has-text-centered mb-4 is-size-4-mobile">Autres moyens de nous contacter</h2>
+        <div class="columns is-multiline is-centered has-text-centered">
+            <div class="column is-12-mobile is-half-desktop">
+                <div class="box has-background-info-light p-5">
+                    <h3 class="title is-4 has-text-link mb-4 is-size-5-mobile">Assistance Téléphonique</h3>
+                    <p class="is-size-6 mb-3 is-size-6-mobile">
+                        <span class="icon is-large"><i class="fas fa-phone-alt"></i></span>
+                        <strong>+241 74345933</strong>
+                    </p>
+                    <p class="is-size-6 has-text-grey-dark is-size-7-mobile">
+                        Disponible du lundi au vendredi, de 9h00 à 17h00 (Heure de Libreville, Gabon).<br>
+                        *Pour les urgences ou si vous préférez parler à un conseiller.*
+                    </p>
+                </div>
+            </div>
+            <div class="column is-12-mobile is-half-desktop">
+                <div class="box has-background-success-light p-5">
+                    <h3 class="title is-4 has-text-success mb-4 is-size-5-mobile">Nous Contacter par Email</h3>
+                    <p class="is-size-6 mb-3 is-size-6-mobile">
+                        <span class="icon is-large"><i class="fas fa-envelope"></i></span>
+                        <strong><a href="mailto:support@facturo.com">support@facturo.tech</a></strong>
+                    </p>
+                    <p class="is-size-6 has-text-grey-dark is-size-7-mobile">
+                        Pour les questions générales, partenariats ou si vous avez besoin d'envoyer des documents volumineux.<br>
+                        *Nous nous efforçons de répondre rapidement à tous les e-mails.*
+                    </p>
+                </div>
+            </div>
+{% endblock %}

@@ -1,0 +1,731 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Facturo - Gestion de Factures{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.0/css/bulma.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* Styles personnalisés pour la mise en page latérale */
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* Empêche les barres de défilement globales */
+        }
+
+        .app-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px; /* Largeur fixe de la barre latérale */
+            background-color: #363636; /* Couleur de fond foncée pour le contraste */
+            color: #fff;
+            padding: 20px 0;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto; /* Permet le défilement si le contenu dépasse */
+            position: sticky; /* Barre latérale collante */
+            top: 0;
+            height: 100vh; /* Prend toute la hauteur de la fenêtre */
+        }
+
+        .sidebar-brand {
+            padding: 0 20px 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 20px;
+        }
+
+        .sidebar-menu {
+            flex-grow: 1; /* Permet au menu de prendre l'espace disponible */
+        }
+
+        .sidebar-menu a {
+            color: #fff;
+            display: block;
+            padding: 10px 20px;
+            text-decoration: none;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            font-size: 1.1em;
+        }
+
+        .sidebar-menu a .icon {
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.is-active {
+            background-color: #4a4a4a; /* Couleur au survol et pour l'élément actif */
+            color: #fff;
+        }
+
+        .sidebar-footer {
+            padding: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            text-align: center;
+        }
+
+        .main-content {
+            flex-grow: 1;
+            padding: 30px; /* Espacement du contenu principal */
+            background-color: #f5f5f5; /* Fond clair pour le contenu */
+            overflow-y: auto; /* Permet le défilement du contenu principal */
+            height: 100vh; /* Prend toute la hauteur de la fenêtre */
+        }
+
+        /* Styles pour les messages Bulma */
+        .notification.is-success { background-color: #48c78e; color: #fff; }
+        .notification.is-danger { background-color: #f14668; color: #fff; }
+        .notification.is-info { background-color: #3e8ed0; color: #fff; }
+        .notification .delete {
+            background-color: transparent;
+            width: 20px;
+            height: 20px;
+            position: absolute;
+            right: 15px;
+            top: 15px;
+        }
+        .notification .delete:before, .notification .delete:after {
+            background-color: currentColor;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-wrapper">
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <a href="{% url 'home' %}">
+                    <h1 class="title is-3 has-text-white">Facturo</h1>
+                </a>
+            </div>
+
+            <nav class="sidebar-menu">
+                <a class="{% if request.resolver_match.url_name == 'home' %}is-active{% endif %}" href="{% url 'home' %}">
+                    <span class="icon"><i class="fas fa-home"></i></span>
+                    <span>Accueil</span>
+                </a>
+                {% if user.is_authenticated %}
+                <a class="{% if 'client' in request.resolver_match.url_name %}is-active{% endif %}" href="{% url 'client_list' %}">
+                    <span class="icon"><i class="fas fa-users"></i></span>
+                    <span>Clients</span>
+                </a>
+                <a class="{% if 'product' in request.resolver_match.url_name %}is-active{% endif %}" href="{% url 'product_list' %}">
+                    <span class="icon"><i class="fas fa-box"></i></span>
+                    <span>Produits & Services</span>
+                </a>
+                <a class="{% if 'invoice' in request.resolver_match.url_name %}is-active{% endif %}" href="{% url 'invoice_list' %}">
+                    <span class="icon"><i class="fas fa-file-invoice"></i></span>
+                    <span>Factures</span>
+                </a>
+                <a class="{% if request.resolver_match.url_name == 'company_settings' %}is-active{% endif %}" href="{% url 'company_settings' %}">
+                    <span class="icon"><i class="fas fa-building"></i></span>
+                    <span>Mon Entreprise</span>
+                </a>
+                {% endif %}
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="buttons is-centered">
+                    {% if user.is_authenticated %}
+                    <span class="button is-light is-small is-rounded" style="cursor: default;">
+                        <span class="icon"><i class="fas fa-user-circle"></i></span>
+                        <span>{{ user.username }}</span>
+                    </span>
+                    <a class="button is-danger is-small is-outlined" href="{% url 'logout' %}">
+                        <span class="icon"><i class="fas fa-sign-out-alt"></i></span>
+                        <span>Déconnexion</span>
+                    </a>
+                    {% else %}
+                    <a class="button is-primary is-small" href="{% url 'register' %}">
+                        <strong>S'inscrire</strong>
+                    </a>
+                    <a class="button is-light is-small" href="{% url 'login' %}">
+                        Se connecter
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </aside>
+
+        <div class="main-content">
+            <section class="section">
+                <div class="container is-fluid"> {# Utilisation de is-fluid pour une largeur de contenu plus grande #}
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="notification is-{% if message.tags == 'error' %}danger{% elif message.tags == 'success' %}success{% else %}info{% endif %}">
+                                <button class="delete"></button>
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    {% block content %}
+                    {% endblock %}
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        // JavaScript pour fermer les notifications Bulma
+        document.addEventListener('DOMContentLoaded', () => {
+            (document.querySelectorAll('.notification .delete') || []).forEach(($delete) => {
+                const $notification = $delete.parentNode;
+                $delete.addEventListener('click', () => {
+                    $notification.parentNode.removeChild($notification);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+Ancien model mais je dois supprimer CustomUser
+
+
+
+
+# core/models.py
+from django.db import models
+from django.contrib.auth.models import User
+import uuid # Pour les numéros de facture uniques
+from datetime import date
+from django.urls import reverse
+
+from django.contrib.auth.models import AbstractUser
+
+
+
+
+
+# Nouveau modèle utilisateur personnalisé
+class CustomUser(AbstractUser):
+    email = models.EmailField(unique=True, null=False, blank=False) # Rendre l'email unique et requis
+    email_confirmed = models.BooleanField(default=False)
+
+    # Ajoutez des related_name uniques pour éviter les conflits si vous avez d'autres User foreign keys
+    # C'est important si vous utilisez des champs comme groups ou user_permissions
+    groups = models.ManyToManyField(
+        'auth.Group',
+        verbose_name='groups',
+        blank=True,
+        help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.',
+        related_name="customuser_set",
+        related_query_name="customuser",
+    )
+    user_permissions = models.ManyToManyField(
+        'auth.Permission',
+        verbose_name='user permissions',
+        blank=True,
+        help_text='Specific permissions for this user.',
+        related_name="customuser_set",
+        related_query_name="customuser",
+    )
+
+    def __str__(self):
+        return self.email
+
+
+
+
+
+class CompanyProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='company_profile')
+    name = models.CharField(max_length=255)
+    logo = models.ImageField(upload_to='company_logos/', blank=True, null=True)
+    address = models.TextField()
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    tax_id = models.CharField(max_length=50, blank=True, null=True, verbose_name="Informations fiscales (TVA, SIRET...)")
+    bank_details = models.TextField(blank=True, null=True, verbose_name="Coordonnées bancaires")
+    default_payment_terms = models.TextField(blank=True, null=True, verbose_name="Conditions de paiement par défaut")
+
+    def __str__(self):
+        return self.name
+
+class Client(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='clients')
+    name = models.CharField(max_length=255)
+    contact_person = models.CharField(max_length=255, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    address = models.TextField()
+    tax_info = models.CharField(max_length=255, blank=True, null=True, verbose_name="Informations fiscales (SIRET, TVA intracommunautaire...)")
+    notes = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+class Product(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='products')
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+    tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=20.00, verbose_name="Taux de TVA (%)") # Exemple: 20.00%
+    sku = models.CharField(max_length=50, blank=True, null=True, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+class Invoice(models.Model):
+    STATUS_CHOICES = [
+        ('Draft', 'Brouillon'),
+        ('Sent', 'Envoyée'),
+        ('Paid', 'Payée'),
+        ('Partially Paid', 'Partiellement payée'),
+        ('Overdue', 'En retard'),
+        ('Cancelled', 'Annulée'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='invoices')
+    client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='invoices')
+    company_profile = models.ForeignKey(CompanyProfile, on_delete=models.SET_NULL, null=True, blank=True,
+                                        help_text="Profil d'entreprise utilisé pour émettre cette facture")
+    invoice_number = models.CharField(max_length=100, unique=True, editable=False)
+    issue_date = models.DateField(default=date.today)
+    due_date = models.DateField(blank=True, null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Draft')
+    subtotal = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    tax_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    discount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name="Remise (%)")
+    shipping_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name="Frais de port")
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    notes = models.TextField(blank=True, null=True, verbose_name="Notes / Conditions de paiement")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-issue_date', '-created_at']
+
+    def __str__(self):
+        return f"Facture {self.invoice_number} pour {self.client.name}"
+
+    def save(self, *args, **kwargs):
+        if not self.invoice_number:
+            # Génère un numéro de facture unique. Personnalisez selon vos besoins (ex: INV-ANNEE-0001)
+            year = self.issue_date.year
+            last_invoice = Invoice.objects.filter(user=self.user, issue_date__year=year).order_by('created_at').last()
+            if last_invoice:
+                last_num = int(last_invoice.invoice_number.split('-')[-1])
+                new_num = last_num + 1
+            else:
+                new_num = 1
+            self.invoice_number = f"INV-{year}-{new_num:04d}" # Format INV-AAAA-0001
+        super().save(*args, **kwargs)
+        self.calculate_totals() # Recalcule les totaux après sauvegarde
+
+    def calculate_totals(self):
+        subtotal = sum(item.total_price for item in self.items.all())
+        self.subtotal = subtotal
+
+        total_tax = sum(item.tax_amount for item in self.items.all())
+        self.tax_amount = total_tax
+
+        # Appliquer la remise sur le sous-total avant taxes
+        discount_amount = self.subtotal * (self.discount / 100)
+        subtotal_after_discount = self.subtotal - discount_amount
+
+        self.total_amount = subtotal_after_discount + self.tax_amount + self.shipping_cost
+        super().save(update_fields=['subtotal', 'tax_amount', 'total_amount'])
+
+
+    def get_absolute_url(self):
+        # Cette méthode retourne l'URL de la vue de détail de la facture.
+        # Assurez-vous que 'invoice_detail' est le nom de votre URL pour la vue de détail.
+        return reverse('invoice_detail', kwargs={'pk': self.pk})
+    
+    
+
+class InvoiceItem(models.Model):
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True,
+                                help_text="Produit/service du catalogue, si applicable")
+    description = models.CharField(max_length=255, help_text="Description de l'article (si non lié à un produit)")
+    quantity = models.PositiveIntegerField(default=1)
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+    tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=20.00) # Taux de TVA pour cet article
+    total_price = models.DecimalField(max_digits=10, decimal_places=2, editable=False)
+    tax_amount = models.DecimalField(max_digits=10, decimal_places=2, editable=False, default=0.00)
+
+    class Meta:
+        ordering = ['id']
+
+    def __str__(self):
+        return f"{self.description} ({self.quantity} x {self.unit_price}€)"
+
+    
+    def save(self, *args, **kwargs):
+        self.total_price = self.quantity * self.unit_price
+        self.tax_amount = self.total_price * (self.tax_rate / 100)
+        super().save(*args, **kwargs)
+        self.invoice.calculate_totals() # Met à jour les totaux de la facture parente
+
+    def delete(self, *args, **kwargs):
+        invoice = self.invoice
+        super().delete(*args, **kwargs)
+        invoice.calculate_totals() # Recalcule les totaux après suppression d'un article
+
+
+# Mon model qui fonctionne tres bien actuelle mercredi 23 a 19h
+
+
+# core/models.py
+from django.db import models
+# Supprimez la ligne suivante :
+# from django.contrib.auth.models import User
+import uuid # Pour les numéros de facture uniques
+from datetime import date
+from django.urls import reverse
+
+from django.contrib.auth.models import AbstractUser
+
+
+# Nouveau modèle utilisateur personnalisé
+class CustomUser(AbstractUser):
+    email = models.EmailField(unique=True, null=False, blank=False) # Rendre l'email unique et requis
+    email_confirmed = models.BooleanField(default=False)
+
+    # Ajoutez des related_name uniques pour éviter les conflits si vous avez d'autres User foreign keys
+    # C'est important si vous utilisez des champs comme groups ou user_permissions
+    groups = models.ManyToManyField(
+        'auth.Group',
+        verbose_name='groups',
+        blank=True,
+        help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.',
+        related_name="customuser_groups", # Changed related_name
+        related_query_name="customuser",
+    )
+    user_permissions = models.ManyToManyField(
+        'auth.Permission',
+        verbose_name='user permissions',
+        blank=True,
+        help_text='Specific permissions for this user.',
+        related_name="customuser_permissions", # Changed related_name
+        related_query_name="customuser",
+    )
+
+    def __str__(self):
+        return self.email
+
+
+class CompanyProfile(models.Model):
+    # Corriger ici : utiliser CustomUser
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='company_profile')
+    name = models.CharField(max_length=255)
+    logo = models.ImageField(upload_to='company_logos/', blank=True, null=True)
+    address = models.TextField()
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    tax_id = models.CharField(max_length=50, blank=True, null=True, verbose_name="Informations fiscales (TVA, SIRET...)")
+    bank_details = models.TextField(blank=True, null=True, verbose_name="Coordonnées bancaires")
+    default_payment_terms = models.TextField(blank=True, null=True, verbose_name="Conditions de paiement par défaut")
+
+    def __str__(self):
+        return self.name
+
+class Client(models.Model):
+    # Corriger ici : utiliser CustomUser
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='clients')
+    name = models.CharField(max_length=255)
+    contact_person = models.CharField(max_length=255, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    address = models.TextField()
+    tax_info = models.CharField(max_length=255, blank=True, null=True, verbose_name="Informations fiscales (SIRET, TVA intracommunautaire...)")
+    notes = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+class Product(models.Model):
+    # Corriger ici : utiliser CustomUser
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='products')
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+    tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=20.00, verbose_name="Taux de TVA (%)") # Exemple: 20.00%
+    sku = models.CharField(max_length=50, blank=True, null=True, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+class Invoice(models.Model):
+    STATUS_CHOICES = [
+        ('Draft', 'Brouillon'),
+        ('Sent', 'Envoyée'),
+        ('Paid', 'Payée'),
+        ('Partially Paid', 'Partiellement payée'),
+        ('Overdue', 'En retard'),
+        ('Cancelled', 'Annulée'),
+    ]
+
+    # Corriger ici : utiliser CustomUser
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='invoices')
+    client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='invoices')
+    company_profile = models.ForeignKey(CompanyProfile, on_delete=models.SET_NULL, null=True, blank=True,
+                                        help_text="Profil d'entreprise utilisé pour émettre cette facture")
+    invoice_number = models.CharField(max_length=100, unique=True, editable=False)
+    issue_date = models.DateField(default=date.today)
+    due_date = models.DateField(blank=True, null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Draft')
+    subtotal = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    tax_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    discount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name="Remise (%)")
+    shipping_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name="Frais de port")
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    notes = models.TextField(blank=True, null=True, verbose_name="Notes / Conditions de paiement")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-issue_date', '-created_at']
+
+    def __str__(self):
+        return f"Facture {self.invoice_number} pour {self.client.name}"
+
+    def save(self, *args, **kwargs):
+        if not self.invoice_number:
+            # Génère un numéro de facture unique. Personnalisez selon vos besoins (ex: INV-ANNEE-0001)
+            year = self.issue_date.year
+            last_invoice = Invoice.objects.filter(user=self.user, issue_date__year=year).order_by('created_at').last()
+            if last_invoice:
+                last_num = int(last_invoice.invoice_number.split('-')[-1])
+                new_num = last_num + 1
+            else:
+                new_num = 1
+            self.invoice_number = f"INV-{year}-{new_num:04d}" # Format INV-AAAA-0001
+        super().save(*args, **kwargs)
+        self.calculate_totals() # Recalcule les totaux après sauvegarde
+
+    def calculate_totals(self):
+        subtotal = sum(item.total_price for item in self.items.all())
+        self.subtotal = subtotal
+
+        total_tax = sum(item.tax_amount for item in self.items.all())
+        self.tax_amount = total_tax
+
+        # Appliquer la remise sur le sous-total avant taxes
+        discount_amount = self.subtotal * (self.discount / 100)
+        subtotal_after_discount = self.subtotal - discount_amount
+
+        self.total_amount = subtotal_after_discount + self.tax_amount + self.shipping_cost
+        super().save(update_fields=['subtotal', 'tax_amount', 'total_amount'])
+
+
+    def get_absolute_url(self):
+        # Cette méthode retourne l'URL de la vue de détail de la facture.
+        # Assurez-vous que 'invoice_detail' est le nom de votre URL pour la vue de détail.
+        return reverse('invoice_detail', kwargs={'pk': self.pk})
+
+
+class InvoiceItem(models.Model):
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True,
+                                help_text="Produit/service du catalogue, si applicable")
+    description = models.CharField(max_length=255, help_text="Description de l'article (si non lié à un produit)")
+    quantity = models.PositiveIntegerField(default=1)
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+    tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=20.00) # Taux de TVA pour cet article
+    total_price = models.DecimalField(max_digits=10, decimal_places=2, editable=False)
+    tax_amount = models.DecimalField(max_digits=10, decimal_places=2, editable=False, default=0.00)
+
+    class Meta:
+        ordering = ['id']
+
+    def __str__(self):
+        return f"{self.description} ({self.quantity} x {self.unit_price}€)"
+
+
+    def save(self, *args, **kwargs):
+        self.total_price = self.quantity * self.unit_price
+        self.tax_amount = self.total_price * (self.tax_rate / 100)
+        super().save(*args, **kwargs)
+        self.invoice.calculate_totals() # Met à jour les totaux de la facture parente
+
+    def delete(self, *args, **kwargs):
+        invoice = self.invoice
+        super().delete(*args, **kwargs)
+        invoice.calculate_totals() # Recalcule les totaux après suppression d'un article
+
+
+
+
+
+
+        mon ancien base qui fonctionne et affiche tout les graphique 
+
+
+        {% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Générateur de Factures{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.0/css/bulma.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Styles personnalisés si besoin */
+        body {
+            display: flex;
+            min-height: 100vh;
+            flex-direction: column;
+        }
+        .wrapper {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <nav class="navbar is-primary" role="navigation" aria-label="main navigation">
+            <div class="navbar-brand">
+                <a class="navbar-item" href="{% url 'home' %}">
+                    <h1 class="title is-4 has-text-white">Facturo</h1>
+                </a>
+                <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample">
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                </a>
+            </div>
+
+            <div id="navbarBasicExample" class="navbar-menu">
+                <div class="navbar-start">
+                    <a class="navbar-item" href="{% url 'home' %}">
+                        Accueil
+                    </a>
+                    {% if user.is_authenticated %}
+                    <a class="navbar-item" href="{% url 'dashboard' %}"> {# Nouveau lien #}
+                        Tableau de Bord
+                    </a>
+                    <a class="navbar-item" href="{% url 'client_list' %}">
+                        Clients
+                    </a>
+                    <a class="navbar-item" href="{% url 'product_list' %}">
+                        Produits
+                    </a>
+                    <a class="navbar-item" href="{% url 'invoice_list' %}">
+                        Factures
+                    </a>
+                    <a class="navbar-item" href="{% url 'company_settings' %}">
+                        Mon entreprise
+                    </a>
+                    {% endif %}
+                </div>
+
+                <div class="navbar-end">
+                    <div class="navbar-item">
+                        <div class="buttons">
+                            {% if user.is_authenticated %}
+                            <span class="button is-light">
+                                Bonjour, {{ user.username }}
+                            </span>
+                            <a class="button is-danger" href="{% url 'logout' %}">
+                                Déconnexion
+                            </a>
+                            {% else %}
+                            <a class="button is-primary" href="{% url 'register' %}">
+                                <strong>S'inscrire</strong>
+                            </a>
+                            <a class="button is-light" href="{% url 'login' %}">
+                                Se connecter
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <section class="section">
+            <div class="container">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="notification is-{% if message.tags == 'error' %}danger{% elif message.tags == 'success' %}success{% else %}info{% endif %}">
+                            <button class="delete"></button>
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                {% block content %}
+                {% endblock %}
+            </div>
+        </section>
+    </div>
+
+    <footer class="footer">
+        <div class="content has-text-centered">
+            <p>
+                <strong>Facturo</strong> par Votre Nom/Organisation. Les données sont fictives.
+            </p>
+        </div>
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <script>
+        // JavaScript pour le burger menu de Bulma
+        document.addEventListener('DOMContentLoaded', () => {
+            const $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
+            if ($navbarBurgers.length > 0) {
+                $navbarBurgers.forEach( el => {
+                    el.addEventListener('click', () => {
+                        const target = el.dataset.target;
+                        const $target = document.getElementById(target);
+                        el.classList.toggle('is-active');
+                        $target.classList.toggle('is-active');
+                    });
+                });
+            }
+
+            // JavaScript pour fermer les notifications Bulma
+            (document.querySelectorAll('.notification .delete') || []).forEach(($delete) => {
+                const $notification = $delete.parentNode;
+                $delete.addEventListener('click', () => {
+                    $notification.parentNode.removeChild($notification);
+                });
+            });
+        });
+    </script>
+
+
+
+    {% block extra_js %}{% endblock %} {# Ajoutez cette ligne #}
+</body>
+</html>

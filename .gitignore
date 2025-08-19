@@ -1,0 +1,14 @@
+# Fichiers et dossiers spécifiques à Python
+*.pyc
+__pycache__/
+venv/
+.env
+
+# Fichiers de base de données Django
+db.sqlite3
+
+# Fichiers de médias
+media/
+
+# Fichiers sensibles de Django (settings.py)
+invoice_project/settings.py

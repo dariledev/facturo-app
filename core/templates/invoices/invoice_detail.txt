@@ -1,0 +1,248 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Facture {{ invoice.invoice_number }}{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container is-fluid">
+        <nav class="breadcrumb is-small" aria-label="breadcrumbs">
+            <ul>
+                <li><a href="{% url 'home' %}">Accueil</a></li>
+                <li><a href="{% url 'invoice_list' %}">Factures</a></li>
+                <li class="is-active"><a href="#" aria-current="page">{{ invoice.invoice_number }}</a></li>
+            </ul>
+        </nav>
+
+        <h1 class="title is-2 mb-4">
+            Facture n° {{ invoice.invoice_number }}
+            <span class="tag is-large {% if invoice.status == 'Paid' %}is-success{% elif invoice.status == 'Sent' %}is-info{% elif invoice.status == 'Overdue' %}is-danger{% else %}is-light{% endif %} ml-3" id="invoice-status-tag">
+                {{ invoice.get_status_display }}
+            </span>
+        </h1>
+
+        <div class="buttons">
+            <a href="{% url 'invoice_update' invoice.pk %}" class="button is-info is-light">
+                <span class="icon"><i class="fas fa-edit"></i></span>
+                <span>Modifier</span>
+            </a>
+            <a href="{% url 'invoice_delete' invoice.pk %}" class="button is-danger is-light">
+                <span class="icon"><i class="fas fa-trash"></i></span>
+                <span>Supprimer</span>
+            </a>
+            
+            {# LIENS DE TÉLÉCHARGEMENT ET D'ENVOI PAR EMAIL REMIS ICI #}
+            <a href="{% url 'invoice_pdf' invoice.pk %}" class="button is-primary is-light"> {# REMIS LE LIEN #}
+                <span class="icon"><i class="fas fa-download"></i></span>
+                <span>Télécharger PDF</span> {# Vous devrez implémenter cette fonctionnalité #}
+            </a>
+            <a href="{% url 'invoice_send_email' invoice.pk %}" class="button is-link is-light"> {# REMIS LE LIEN #}
+                <span class="icon"><i class="fas fa-envelope"></i></span>
+                <span>Envoyer par Email</span> {# Vous devrez implémenter cette fonctionnalité #}
+            </a>
+
+            {# Bouton "Marquer comme payée" #}
+            {% if invoice.status != 'Paid' %}
+            <button id="mark-as-paid-button" class="button is-success is-outlined">
+                <span class="icon"><i class="fas fa-check-circle"></i></span>
+                <span>Marquer comme payée</span>
+            </button>
+            {% endif %}
+        </div>
+
+        <hr>
+
+        <div class="columns">
+            <div class="column is-half">
+                <h3 class="title is-4">Informations Client</h3>
+                <p><strong>Nom:</strong> {{ invoice.client.name }}</p>
+                <p><strong>Email:</strong> {{ invoice.client.email }}</p>
+                <p><strong>Téléphone:</strong> {{ invoice.client.phone }}</p>
+                <p><strong>Adresse:</strong> {{ invoice.client.address }}</p>
+            </div>
+            <div class="column is-half has-text-right">
+                <h3 class="title is-4">Détails de la Facture</h3>
+                <p><strong>Date d'émission:</strong> {{ invoice.issue_date|date:"d M Y" }}</p>
+                <p><strong>Date d'échéance:</strong> {{ invoice.due_date|default:"N/A"|date:"d M Y" }}</p>
+                <p><strong>Statut:</strong> <strong class="{% if invoice.status == 'Paid' %}has-text-success{% elif invoice.status == 'Sent' %}has-text-info{% elif invoice.status == 'Overdue' %}has-text-danger{% else %}has-text-grey{% endif %} details-status-text">{{ invoice.get_status_display }}</strong></p>
+            </div>
+        </div>
+
+        <hr>
+
+        <h3 class="title is-4">Articles de la Facture</h3>
+        <div class="table-container">
+            <table class="table is-bordered is-striped is-hoverable is-fullwidth">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Produit/Service</th>
+                        <th class="has-text-right">Quantité</th>
+                        <th class="has-text-right">Prix Unitaire</th>
+                        <th class="has-text-right">TVA (%)</th>
+                        <th class="has-text-right">Total HT</th>
+                        <th class="has-text-right">Total TTC</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in invoice.items.all %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>
+                            <strong>{{ item.product.name }}</strong><br>
+                            <small>{{ item.product.description|default_if_none:"" }}</small>
+                        </td>
+                        <td class="has-text-right">{{ item.quantity }}</td>
+                        <td class="has-text-right">{{ item.unit_price|floatformat:2 }} F CFA</td>
+                        <td class="has-text-right">{{ item.tax_rate|floatformat:2 }}</td>
+                        <td class="has-text-right">{{ item.get_total_price_before_tax|floatformat:2 }} F CFA</td>
+                        <td class="has-text-right">{{ item.total_price|floatformat:2 }} F CFA</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="has-text-centered">Aucun article dans cette facture.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="5" class="has-text-right"><strong>Sous-total HT :</strong></td>
+                        <td colspan="2" class="has-text-right">{{ invoice.subtotal|floatformat:2 }} F CFA</td>
+                    </tr>
+                    <tr>
+                        <td colspan="5" class="has-text-right"><strong>Remise ({{ invoice.discount|floatformat:2 }} %) :</strong></td>
+                        {# UTILISATION DES NOUVEAUX FILTRES #}
+                        <td colspan="2" class="has-text-right">- {{ invoice.subtotal|multiply:invoice.discount|divide:100|floatformat:2 }} F CFA</td>
+                    </tr>
+                    <tr>
+                        <td colspan="5" class="has-text-right"><strong>Total Taxes (TVA) :</strong></td>
+                        <td colspan="2" class="has-text-right">{{ invoice.tax_amount|floatformat:2 }} F CFA</td>
+                    </tr>
+                    <tr>
+                        <td colspan="5" class="has-text-right"><strong>Frais de port :</strong></td>
+                        <td colspan="2" class="has-text-right">{{ invoice.shipping_cost|floatformat:2 }} F CFA</td>
+                    </tr>
+                    <tr class="is-selected">
+                        <td colspan="5" class="has-text-right title is-4"><strong>Total à payer :</strong></td>
+                        <td colspan="2" class="has-text-right title is-4">{{ invoice.total_amount|floatformat:2 }} F CFA</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        {% if invoice.notes %}
+        <h3 class="title is-4 mt-6">Notes / Conditions de paiement</h3>
+        <div class="content">
+            <p>{{ invoice.notes|linebreaksbr }}</p>
+        </div>
+        {% endif %}
+
+        <div class="has-text-right mt-5">
+            <a href="{% url 'invoice_list' %}" class="button is-light">Retour à la liste des factures</a>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }} {# Conserve les scripts existants du base.html #}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const markAsPaidButton = document.getElementById('mark-as-paid-button');
+        const invoiceStatusTag = document.getElementById('invoice-status-tag');
+        const currentInvoiceId = {{ invoice.pk }}; // Récupère l'ID de la facture depuis le contexte Django
+
+        // Ajout d'un ID pour l'élément de statut dans la section Détails de la Facture pour une mise à jour facile
+        const detailsStatusText = document.querySelector('.details-status-text');
+
+        if (markAsPaidButton) {
+            markAsPaidButton.addEventListener('click', async () => {
+                const confirmMark = confirm("Voulez-vous vraiment marquer cette facture comme payée ?");
+                if (!confirmMark) {
+                    return; // L'utilisateur a annulé
+                }
+
+                try {
+                    const response = await fetch(`/invoices/${currentInvoiceId}/mark-as-paid/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken') // Fonction pour obtenir le jeton CSRF
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        // Mise à jour de l'interface utilisateur
+                        invoiceStatusTag.textContent = 'Payée'; // Utiliser 'Payée' directement comme le backend envoie 'Paid'
+                        invoiceStatusTag.classList.remove('is-info', 'is-danger', 'is-light'); 
+                        invoiceStatusTag.classList.add('is-success'); 
+
+                        // Mise à jour du texte du statut dans les détails de la facture
+                        if (detailsStatusText) {
+                            detailsStatusText.textContent = 'Payée'; // Utiliser 'Payée'
+                            detailsStatusText.classList.remove('has-text-info', 'has-text-danger', 'has-text-grey');
+                            detailsStatusText.classList.add('has-text-success');
+                        }
+
+                        // Supprimer le bouton une fois la facture marquée comme payée
+                        markAsPaidButton.remove();
+
+                        // Afficher le message de succès
+                        displayBulmaNotification(data.message, 'success');
+
+                    } else {
+                        // Gérer les erreurs de la réponse JSON
+                        displayBulmaNotification(data.message || 'Une erreur est survenue lors du marquage de la facture.', 'danger');
+                    }
+                } catch (error) {
+                    console.error('Erreur lors de la requête AJAX:', error);
+                    displayBulmaNotification('Impossible de communiquer avec le serveur.', 'danger');
+                }
+            });
+        }
+
+        // Fonction utilitaire pour obtenir le jeton CSRF
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.startsWith(name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Fonction utilitaire pour afficher une notification Bulma
+        function displayBulmaNotification(message, type) {
+            const container = document.querySelector('.container.is-fluid'); 
+            if (container) {
+                const notificationDiv = document.createElement('div');
+                notificationDiv.classList.add('notification', `is-${type}`);
+                notificationDiv.innerHTML = `
+                    <button class="delete"></button>
+                    ${message}
+                `;
+                container.prepend(notificationDiv); 
+
+                notificationDiv.querySelector('.delete').addEventListener('click', () => {
+                    notificationDiv.parentNode.removeChild(notificationDiv);
+                });
+
+                setTimeout(() => {
+                    if (notificationDiv.parentNode) {
+                        notificationDiv.parentNode.removeChild(notificationDiv);
+                    }
+                }, 5000); 
+            }
+        }
+    });
+</script>
+{% endblock %}

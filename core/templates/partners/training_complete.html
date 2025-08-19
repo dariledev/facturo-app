@@ -1,0 +1,19 @@
+{% extends "core/base.html" %}
+{% block content %}
+<section class="section has-text-centered">
+    <div class="container">
+        <h1 class="title is-2 has-text-success">Félicitations !</h1>
+        <p class="subtitle is-4">Vous avez terminé la formation avec un score de **{{ partenaire.score }}%**.</p>
+        <p>Votre statut est désormais **"En attente de validation"**.</p>
+        <p>Un administrateur va évaluer votre candidature. Vous recevrez une notification par email si votre profil est validé, avec les détails pour commencer à vendre.</p>
+        <hr>
+        <div class="box">
+            <p><strong>Votre progression:</strong> {{ partenaire.progression }}%</p>
+            <p><strong>Statut:</strong> {{ partenaire.get_status_display }}</p>
+        </div>
+        <a href="{% url 'dashboard' %}" class="button is-primary is-large is-rounded mt-5">
+            Retourner au tableau de bord
+        </a>
+    </div>
+</section>
+{% endblock %}

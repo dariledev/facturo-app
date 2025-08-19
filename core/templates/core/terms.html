@@ -1,0 +1,56 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Conditions Générales d'Utilisation - Facturo{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container content"> {# La classe 'content' de Bulma stylise bien le texte #}
+        <h1 class="title is-4 has-text-centered mb-6">Conditions Générales d'Utilisation de Facturo</h1>
+
+        <div class="box">
+            <h2 class="title is-5 has-text-primary">1. Acceptation des Conditions</h2>
+            <p>En accédant et en utilisant le service Facturo (ci-après "le Service"), vous acceptez d'être lié par les présentes Conditions Générales d'Utilisation ("CGU"). Si vous n'acceptez pas toutes les conditions de cet accord, vous ne devez pas accéder au Service ni l'utiliser.</p>
+
+            <h2 class="title is-5 has-text-primary mt-5">2. Licence à Vie</h2>
+            <p>Facturo propose une **licence d'utilisation à vie** du logiciel. Cela signifie que, moyennant un paiement unique, vous bénéficiez d'un droit d'utilisation du logiciel pour une durée illimitée. Cette licence inclut :</p>
+            <ul>
+                <li>L'accès à toutes les fonctionnalités actuelles de Facturo.</li>
+                <li>Les mises à jour de sécurité critiques pour maintenir la stabilité et la protection de vos données.</li>
+                <li>Les mises à jour mineures et les corrections de bugs.</li>
+                <li><strong>Le support technique par e-mail</strong> pour toute question ou problème lié à l'utilisation du Service.</li>
+            </ul>
+            <p>La "licence à vie" se réfère à la durée de vie du produit Facturo tel que maintenu et développé par [Votre Nom/Organisation]. Elle ne garantit pas des mises à jour majeures de fonctionnalités qui pourraient être proposées sous forme de modules complémentaires ou de nouvelles versions distinctes à l'avenir.</p>
+
+            <h2 class="title is-5 has-text-primary mt-5">3. Confidentialité et Protection des Données</h2>
+            <p>Nous nous engageons à protéger vos données personnelles et financières. Toutes les informations que vous saisissez dans Facturo sont traitées conformément à notre Politique de Confidentialité, <a href="{% url 'privacy_policy_page' %}">disponible</a> . Nous utilisons des mesures de sécurité standard de l'industrie pour protéger vos données contre l'accès, l'utilisation ou la divulgation non autorisés.</p>
+
+            <h2 class="title is-5 has-text-primary mt-5">4. Responsabilités de l'Utilisateur</h2>
+            <p>En tant qu'utilisateur de Facturo, vous êtes responsable de :</p>
+            <ul>
+                <li>Maintenir la confidentialité de vos informations de connexion (nom d'utilisateur et mot de passe).</li>
+                <li>L'exactitude et l'intégrité des données que vous saisissez dans le Service.</li>
+                <li>L'utilisation de Facturo conformément aux lois et réglementations en vigueur dans votre juridiction.</li>
+            </ul>
+
+            <h2 class="title is-5 has-text-primary mt-5">5. Modifications des Conditions</h2>
+            <p>Facturo se réserve le droit de modifier les présentes CGU à tout moment. Toute modification prendra effet immédiatement après leur publication sur le site web. Il est de votre responsabilité de consulter régulièrement les CGU pour prendre connaissance des éventuelles modifications. L'utilisation continue du Service après la publication des modifications constitue votre acceptation de ces modifications.</p>
+
+            <h2 class="title is-5 has-text-primary mt-5">6. Limitation de Responsabilité</h2>
+            <p>Facturo est fourni "tel quel" sans garantie d'aucune sorte, expresse ou implicite. Nous ne garantissons pas que le Service sera ininterrompu ou exempt d'erreurs. Dans la mesure permise par la loi applicable, Facturo ne sera pas responsable des dommages directs, indirects, accessoires, spéciaux, consécutifs ou exemplaires résultant de l'utilisation ou de l'incapacité d'utiliser le Service.</p>
+
+            <h2 class="title is-5 has-text-primary mt-5">7. Droit Applicable</h2>
+            <p>Les présentes CGU sont régies et interprétées conformément aux lois de [Votre Pays, ex: la République Gabonaise], sans égard à ses principes de conflit de lois.</p>
+
+            <h2 class="title is-5 has-text-primary mt-5">8. Contact</h2>
+            <p>Pour toute question concernant ces Conditions Générales, veuillez nous contacter via notre page de support : <a href="{% url 'support_page' %}">Facturo Support</a>.</p>
+
+            <p class="has-text-grey-light is-size-7 mt-6">Dernière mise à jour : 24 juillet 2025</p>
+        </div>
+
+        <div class="has-text-centered mt-5">
+            <a href="{% url 'home' %}" class="button is-light">Retour à l'Accueil</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

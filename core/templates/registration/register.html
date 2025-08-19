@@ -1,0 +1,107 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}S'inscrire{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="columns is-centered">
+            <div class="column is-half">
+                <h1 class="title is-3 has-text-centered">S'inscrire sur Facturo</h1>
+                <div class="box">
+                    <form method="post">
+                        {% csrf_token %}
+
+                        {# Afficher les erreurs non-champ du formulaire #}
+                        {% if form.non_field_errors %}
+                            <div class="notification is-danger">
+                                <button class="delete"></button>
+                                {% for error in form.non_field_errors %}
+                                    <p>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        {# Rendre chaque champ manuellement avec les classes Bulma #}
+                        {% for field in form %}
+                            <div class="field">
+                                <label class="label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                <div class="control">
+                                    {{ field }} {# Le champ HTML généré par Django #}
+                                </div>
+                                
+                                {# Logic for help text and errors display #}
+                                {% if field.name == 'username' %}
+
+                                    {% if field.errors %}
+                                        <p class="help is-danger">
+                                            {% for error in field.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </p>
+                                    {% endif %}
+                                {% elif field.name == 'password' or field.name == 'password2' %}
+                                    {# Pour les mots de passe, on masque tous les messages d'erreur spécifiques et le help_text #}
+                                    {# On peut afficher un message d'aide générique pour les mots de passe #}
+                                    <p class="help">Votre mot de passe doit contenir au minimum 8 caractères.</p>
+                                    {# Nous ne listons PAS field.errors ici pour masquer les messages spécifiques de validation #}
+                                {% else %}
+                                    {# Pour tous les autres champs (comme l'email), on affiche le help_text et les erreurs normalement #}
+                                    {% if field.help_text %}
+                                        <p class="help">{{ field.help_text }}</p>
+                                    {% endif %}
+                                    {% if field.errors %}
+                                        <p class="help is-danger">
+                                            {% for error in field.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </p>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+
+                        <div class="field is-grouped is-grouped-centered">
+                            <div class="control">
+                                <button type="submit" class="button is-primary is-small">
+                                    <span class="icon is-medium"><i class="fas fa-user-plus"></i></span>
+                                    <span>S'inscrire</span>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                    <p class="has-text-centered mt-4">
+                        Déjà un compte ? <a href="{% url 'login' %}">Se connecter</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Ajouter la classe Bulma 'input' et 'textarea' aux champs générés par Django
+        const inputs = document.querySelectorAll('input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="file"])');
+        inputs.forEach(input => {
+            input.classList.add('input');
+        });
+
+        const textareas = document.querySelectorAll('textarea');
+        textareas.forEach(textarea => {
+            textarea.classList.add('textarea');
+        });
+
+        // Gérer le bouton delete des notifications
+        (document.querySelectorAll('.notification .delete') || []).forEach(($delete) => {
+            const $notification = $delete.parentNode;
+            $delete.addEventListener('click', () => {
+                $notification.parentNode.removeChild($notification);
+            });
+        });
+    });
+</script>
+{% endblock %}

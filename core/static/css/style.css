@@ -1,0 +1,12 @@
+/* your_app/static/css/style.css */
+
+
+/* Exemple pour ajuster la taille de police si nécessaire */
+html {
+    font-size: 16px; /* Base pour rem */
+}
+body {
+    line-height: 1.6;
+}
+
+

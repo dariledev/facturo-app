@@ -1,0 +1,131 @@
+{% extends 'core/base.html' %}
+{% load crispy_forms_tags %}
+{% load static %} {# Make sure this is present for potential static files like CSS #}
+
+{% block title %}Mes Produits{% endblock %}
+
+{% block content %}
+<h1 class="title is-3">Mes Produits et Services</h1>
+<p class="subtitle is-5">Gérez votre catalogue de biens et services.</p>
+
+
+<div class="columns is-vcentered">
+    <div class="column is-8"> 
+        <form method="GET" action="{% url 'product_list' %}">
+            <div class="field has-addons">
+                <div class="control is-expanded">
+                    <input class="input is-small" type="search" name="q" placeholder="Rechercher par nom ou description..." value="{{ request.GET.q }}">
+                </div>
+                <div class="control">
+                    <button type="submit" class="button is-small is-link">
+                        <span class="icon is-small">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <span>Rechercher</span>
+                    </button>
+                </div>
+                {% if request.GET.q %} {# Show clear button only if a query exists #}
+                <div class="control">
+                    <a href="{% url 'product_list' %}" class="button is-light">
+                        <span class="icon is-small">
+                            <i class="fas fa-times"></i>
+                        </span>
+                        <span>Effacer</span>
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+    <div class="column is-4 has-text-right"> {# Take up 4 columns for the add button #}
+        <p class="control">
+            <a href="{% url 'product_create' %}" class="button is-link is-small">
+                <span class="icon"><i class="fas fa-plus"></i></span>
+                <span>Nouveau Produit/Service</span>
+            </a>
+        </p>
+    </div>
+</div>
+
+{% if page_obj %}
+<div class="table-container">
+    <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth">
+        <thead>
+            <tr>
+                <th>Nom</th>
+                <th>Description</th>
+                <th>Prix Unitaire</th>
+                <th>TVA (%)</th>
+                <th>SKU</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in page_obj %}
+            <tr>
+                <td>{{ product.name }}</td>
+                <td>{{ product.description|default:"N/A"|truncatechars:50 }}</td>
+                <td>{{ product.unit_price|floatformat:2 }} FCFA</td>
+                <td>{{ product.tax_rate|floatformat:2 }} %</td>
+                <td>{{ product.sku|default:"N/A" }}</td>
+                <td class="has-text-centered">
+                    <div class="buttons is-centered are-small">
+                        <a href="{% url 'product_update' product.pk %}" class="button is-info is-light" title="Modifier">
+                            <span class="icon"><i class="fas fa-edit"></i></span>
+                        </a>
+                        <a href="{% url 'product_delete' product.pk %}" class="button is-danger is-light" title="Supprimer">
+                            <span class="icon"><i class="fas fa-trash-alt"></i></span>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{# --- Pagination Bulma --- #}
+<nav class="pagination is-centered" role="navigation" aria-label="pagination">
+    {# We need to preserve the search query in pagination links #}
+    {% with query_string=request.GET.urlencode %}
+        {% if page_obj.has_previous %}
+            <a class="pagination-previous" href="?page=1{% if query_string %}&{{ query_string|cut:'page='|cut:'&' }}{% endif %}">Première</a>
+            <a class="pagination-previous" href="?page={{ page_obj.previous_page_number }}{% if query_string %}&{{ query_string|cut:'page='|cut:'&' }}{% endif %}">Précédent</a>
+        {% else %}
+            <a class="pagination-previous" disabled>Première</a>
+            <a class="pagination-previous" disabled>Précédent</a>
+        {% endif %}
+
+        {% if page_obj.has_next %}
+            <a class="pagination-next" href="?page={{ page_obj.next_page_number }}{% if query_string %}&{{ query_string|cut:'page='|cut:'&' }}{% endif %}">Suivant</a>
+            <a class="pagination-next" href="?page={{ page_obj.paginator.num_pages }}{% if query_string %}&{{ query_string|cut:'page='|cut:'&' }}{% endif %}">Dernière</a>
+        {% else %}
+            <a class="pagination-next" disabled>Suivant</a>
+            <a class="pagination-next" disabled>Dernière</a>
+        {% endif %}
+
+        <ul class="pagination-list">
+            {% for i in page_obj.paginator.page_range %}
+                {% if page_obj.number == i %}
+                    <li><a class="pagination-link is-current" aria-label="Page {{ i }}" aria-current="page">{{ i }}</a></li>
+                {% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
+                    <li><a class="pagination-link" aria-label="Go to page {{ i }}" href="?page={{ i }}{% if query_string %}&{{ query_string|cut:'page='|cut:'&' }}{% endif %}">{{ i }}</a></li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+    {% endwith %}
+</nav>
+{# --- Fin Pagination Bulma --- #}
+
+{% else %}
+    {% if request.GET.q %}
+    <div class="notification is-warning">
+        Aucun produit ou service ne correspond à votre recherche "{{ request.GET.q }}".
+    </div>
+    {% else %}
+    <div class="notification is-info">
+        Vous n'avez pas encore de produits ou services enregistrés. <a href="{% url 'product_create' %}">Créez-en un maintenant !</a>
+    </div>
+    {% endif %}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Facture {{ invoice.invoice_number }}</title>
+    <style>
+        body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 12px; }
+        .container { width: 100%; margin: auto; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
+        .company-info, .invoice-info, .client-info { margin-bottom: 20px; }
+        .company-info h1 { font-size: 20px; margin: 0; }
+        .invoice-info h2 { font-size: 16px; margin: 0 0 10px 0; }
+        .invoice-info p, .client-info p { margin: 2px 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .totals { float: right; width: 300px; margin-top: 20px; }
+        .totals p { margin: 2px 0; }
+        .total-amount { font-size: 18px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="company-info">
+                {% if company.logo %}
+                    <img src="{{ company.logo.url }}" alt="Logo" style="max-height: 80px; width: auto;">
+                {% endif %}
+                <h1>{{ company.name }}</h1>
+                <p>{{ company.address|linebreaksbr }}</p>
+                <p>Tel: {{ company.phone }}</p>
+                <p>Email: {{ company.email }}</p>
+            </div>
+            <div class="invoice-info">
+                <h2>Facture</h2>
+                <p>N°: {{ invoice.invoice_number }}</p>
+                <p>Date d'émission: {{ invoice.issue_date|date:"d M Y" }}</p>
+                <p>Date d'échéance: {{ invoice.due_date|date:"d M Y" }}</p>
+                <p>Statut: {{ invoice.get_status_display }}</p>
+            </div>
+        </div>
+
+        <div class="client-info">
+            <p><strong>Facturé à:</strong></p>
+            <p>{{ client.name }}</p>
+            <p>{{ client.address|linebreaksbr }}</p>
+            <p>Email: {{ client.email }}</p>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Quantité</th>
+                    <th>Prix unitaire</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in invoice_items %}
+                    <tr>
+                        <td>{{ item.description }}</td>
+                        <td>{{ item.quantity }}</td>
+                        <td>{{ item.unit_price }}</td>
+                        <td>{{ item.total_price }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="totals">
+            <p>Sous-total: {{ invoice.subtotal }} F CFA</p>
+            <p>Remise ({{ invoice.discount }}%): -{{ discount_amount }} F CFA</p>
+            <p>TVA: {{ invoice.tax_amount }} F CFA</p>
+            <p>Frais de port: {{ invoice.shipping_cost }} F CFA</p>
+            <hr>
+            <p class="total-amount">TOTAL: {{ invoice.total_amount }} F CFA</p>
+        </div>
+
+        {% if invoice.notes %}
+        <div style="clear:both; margin-top: 40px;">
+            <p><strong>Notes / Conditions:</strong></p>
+            <p>{{ invoice.notes|linebreaksbr }}</p>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

@@ -1,0 +1,156 @@
+{% extends 'core/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Mes Clients{% endblock %}
+
+{% block content %}
+<h1 class="title is-4 is-size-4-mobile">Mes Clients</h1>
+<p class="subtitle is-5 is-size-6-mobile">Gérez votre portefeuille client.</p>
+
+<div class="columns is-vcentered is-mobile is-multiline mb-5">
+    {# Formulaire de recherche - Prendra plus de place sur mobile #}
+    <div class="column is-full-mobile is-two-thirds-tablet is-half-desktop">
+        <form method="GET" action="{% url 'search_clients' %}">
+            <div class="field has-addons">
+                <div class="control is-expanded">
+                    <input class="input is-small is-small-mobile" type="text" name="q" placeholder="Rechercher..." value="{{ query }}">
+                </div>
+                <div class="control">
+                    <button type="submit" class="button is-small is-link is-small-mobile">
+                        <span class="icon is-small"><i class="fas fa-search"></i></span>
+                        <span class="is-hidden-mobile">Rechercher</span>
+                    </button>
+                </div>
+                {% if query %}
+                <div class="control">
+                    <a href="{% url 'client_list' %}" class="button is-danger is-light is-small-mobile">
+                        <span class="icon is-small"><i class="fas fa-times"></i></span>
+                        <span class="is-hidden-mobile">Effacer</span>
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+    {# Bouton Nouveau Client - Prendra moins de place sur mobile et sera aligné à droite #}
+    <div class="column is-full-mobile is-one-third-tablet is-half-desktop has-text-right-tablet has-text-centered-mobile">
+        <a href="{% url 'client_create' %}" class="button is-link is-small is-fullwidth-mobile">
+            <span class="icon is-small"><i class="fas fa-plus"></i></span>
+            <span class="is-hidden-mobile">Nouveau Client</span>
+            <span class="is-hidden-tablet-only is-hidden-desktop">Client</span>
+        </a>
+    </div>
+</div>
+
+{% if page_obj %}
+<div class="table-container">
+    <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth">
+        <thead>
+            <tr>
+                <th>Nom Client</th>
+                <th class="is-hidden-mobile">Contact</th>
+                <th class="is-hidden-mobile">Email</th>
+                <th class="is-hidden-mobile">Téléphone</th>
+                <th class="has-text-centered">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for client in page_obj %}
+            <tr>
+                <td><a href="{% url 'client_detail' client.pk %}" class="is-size-7-mobile"><strong>{{ client.name }}</strong></a></td>
+                <td class="is-hidden-mobile is-size-7-mobile">{{ client.contact_person|default:"N/A" }}</td>
+                <td class="is-hidden-mobile is-size-7-mobile">{{ client.email|default:"N/A" }}</td>
+                <td class="is-hidden-mobile is-size-7-mobile">
+                    {% if client.phone %}<a href="tel:{{ client.phone }}">{{ client.phone }}</a>{% else %}N/A{% endif %}
+                </td>
+                <td class="has-text-centered">
+                    <div class="buttons is-centered is-small">
+                        <a href="{% url 'client_detail' client.pk %}" class="button is-info is-light is-inverted is-small" title="Voir">
+                            <span class="icon is-small"><i class="fas fa-eye"></i></span>
+                            <span class="is-hidden-touch">Voir</span>
+                        </a>
+                        <a href="{% url 'client_update' client.pk %}" class="button is-warning is-light is-inverted is-small" title="Modifier">
+                            <span class="icon is-small"><i class="fas fa-edit"></i></span>
+                            <span class="is-hidden-touch">Modifier</span>
+                        </a>
+                        <a href="{% url 'client_delete' client.pk %}" class="button is-danger is-light is-inverted is-small" title="Supprimer">
+                            <span class="icon is-small"><i class="fas fa-trash-alt"></i></span>
+                            <span class="is-hidden-touch">Supprimer</span>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{# --- Pagination Bulma améliorée pour mobile (identique à la page des factures) --- #}
+<nav class="pagination is-centered is-small" role="navigation" aria-label="pagination">
+    {% with current_query=query|default:'' %}
+        {% if page_obj.has_previous %}
+            <a class="pagination-previous" href="?page=1{% if current_query %}&q={{ current_query }}{% endif %}">
+                <span class="icon is-small"><i class="fas fa-angle-double-left"></i></span>
+                <span class="is-hidden-mobile">Première</span>
+            </a>
+            <a class="pagination-previous" href="?page={{ page_obj.previous_page_number }}{% if current_query %}&q={{ current_query }}{% endif %}">
+                <span class="icon is-small"><i class="fas fa-angle-left"></i></span>
+                <span class="is-hidden-mobile">Précédent</span>
+            </a>
+        {% else %}
+            <a class="pagination-previous" disabled>
+                <span class="icon is-small"><i class="fas fa-angle-double-left"></i></span>
+                <span class="is-hidden-mobile">Première</span>
+            </a>
+            <a class="pagination-previous" disabled>
+                <span class="icon is-small"><i class="fas fa-angle-left"></i></span>
+                <span class="is-hidden-mobile">Précédent</span>
+            </a>
+        {% endif %}
+
+        {% if page_obj.has_next %}
+            <a class="pagination-next" href="?page={{ page_obj.next_page_number }}{% if current_query %}&q={{ current_query }}{% endif %}">
+                <span class="is-hidden-mobile">Suivant</span>
+                <span class="icon is-small"><i class="fas fa-angle-right"></i></span>
+            </a>
+            <a class="pagination-next" href="?page={{ page_obj.paginator.num_pages }}{% if current_query %}&q={{ current_query }}{% endif %}">
+                <span class="is-hidden-mobile">Dernière</span>
+                <span class="icon is-small"><i class="fas fa-angle-double-right"></i></span>
+            </a>
+        {% else %}
+            <a class="pagination-next" disabled>
+                <span class="is-hidden-mobile">Suivant</span>
+                <span class="icon is-small"><i class="fas fa-angle-right"></i></span>
+            </a>
+            <a class="pagination-next" disabled>
+                <span class="is-hidden-mobile">Dernière</span>
+                <span class="icon is-small"><i class="fas fa-angle-double-right"></i></span>
+            </a>
+        {% endif %}
+
+        <ul class="pagination-list">
+            <li><a class="pagination-link is-current" aria-label="Page {{ page_obj.number }}" aria-current="page">{{ page_obj.number }}</a></li>
+            {% for i in page_obj.paginator.page_range %}
+                {% if i != page_obj.number %}
+                    {% if i == 1 or i == page_obj.paginator.num_pages or i >= page_obj.number|add:-1 and i <= page_obj.number|add:1 %}
+                        <li><a class="pagination-link is-hidden-mobile" aria-label="Go to page {{ i }}" href="?page={{ i }}{% if current_query %}&q={{ current_query }}{% endif %}">{{ i }}</a></li>
+                    {% elif i == page_obj.number|add:-2 or i == page_obj.number|add:2 %}
+                        <li class="is-hidden-mobile"><span class="pagination-ellipsis">&hellip;</span></li>
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
+        </ul>
+    {% endwith %}
+</nav>
+{# --- Fin Pagination Bulma --- #}
+{% else %}
+<div class="notification is-info">
+    Aucun client trouvé.
+    {% if query %}
+        Pour votre recherche "{{ query }}". <a href="{% url 'client_list' %}">Effacer la recherche</a> ou <a href="{% url 'client_create' %}">créer un nouveau client</a>.
+    {% else %}
+        Vous n'avez pas encore de clients enregistrés. <a href="{% url 'client_create' %}">Créez-en un maintenant !</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

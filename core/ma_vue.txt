@@ -1,0 +1,1002 @@
+# Ma vue avant d'ajouter la previsualiasation des facture
+
+
+ma produit list sans erreur avant la barre de recherche 
+
+class ProductListView(LoginRequiredMixin, ListView):
+    model = Product
+    template_name = 'products/product_list.html'
+    context_object_name = 'products'
+    paginate_by = 10
+
+    def get_queryset(self):
+        return Product.objects.filter(user=self.request.user)
+
+
+# core/views.py
+from django.shortcuts import render, redirect
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth import login, logout, authenticate, get_user_model
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from .forms import CompanyProfileForm, CustomUserCreationForm
+from .models import CompanyProfile # Nous allons créer ce modèle plus tard
+from django.db.models import Q
+from django.urls import reverse_lazy
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from .models import Client, Product, Invoice, InvoiceItem, CompanyProfile
+from .forms import ClientForm, ProductForm, InvoiceForm, InvoiceItemFormSet, CompanyProfileForm
+from django.db import transaction # Pour les transactions de base de données
+from django.http import JsonResponse
+from django.template.loader import render_to_string
+from weasyprint import HTML, CSS
+from django.http import HttpResponse
+from django.forms import inlineformset_factory
+from django.http import JsonResponse
+from django.core.mail import EmailMessage
+
+
+#importation du tableau de bord 
+from django.db.models import Sum, Count, F
+from datetime import date, timedelta
+from calendar import monthrange
+from django.utils import timezone
+from django.db.models.functions import ExtractMonth, ExtractYear
+import pandas as pd
+from io import BytesIO
+from django.http import HttpResponse
+from datetime import datetime, date # Assurez-vous d'avoir datetime et date importés
+from django.db.models import Q # Pour les filtres complexes
+
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+
+
+
+from collections import OrderedDict # Pour garder l'ordre des mois
+from calendar import month_abbr # Pour les noms de mois
+import json # Pour passer des données JSON au template
+
+
+# Pour la vérification d'email
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignature
+from django.conf import settings
+from django.contrib.sites.shortcuts import get_current_site
+
+
+from templated_mail.mail import BaseEmailMessage
+
+
+
+User = get_user_model()
+
+
+@login_required
+def dashboard_view(request):
+    user = request.user
+    user_invoices = Invoice.objects.filter(user=user)
+
+    # --- Logique de filtrage de période ---
+    selected_period = request.GET.get('period', 'last_30_days')
+    start_date_filter = request.GET.get('start_date')
+    end_date_filter = request.GET.get('end_date')
+
+    today = date.today()
+    invoices_to_filter = user_invoices
+
+    if selected_period == 'last_30_days':
+        start_date_range = today - timedelta(days=29)
+        end_date_range = today
+        invoices_to_filter = invoices_to_filter.filter(issue_date__range=[start_date_range, end_date_range])
+    elif selected_period == 'last_12_months':
+        start_date_range = today - timedelta(days=365) # Approximation pour 12 mois
+        end_date_range = today
+        invoices_to_filter = invoices_to_filter.filter(issue_date__range=[start_date_range, end_date_range])
+    elif selected_period == 'this_year':
+        start_date_range = date(today.year, 1, 1)
+        end_date_range = today # Jusqu'à aujourd'hui pour l'année en cours
+        invoices_to_filter = invoices_to_filter.filter(issue_date__range=[start_date_range, end_date_range])
+    elif selected_period == 'last_year':
+        start_date_range = date(today.year - 1, 1, 1)
+        end_date_range = date(today.year - 1, 12, 31)
+        invoices_to_filter = invoices_to_filter.filter(issue_date__range=[start_date_range, end_date_range])
+    elif selected_period == 'custom' and start_date_filter and end_date_filter:
+        try:
+            start_date_range = date.fromisoformat(start_date_filter)
+            end_date_range = date.fromisoformat(end_date_filter)
+            if start_date_range > end_date_range:
+                messages.error(request, "La date de début ne peut pas être postérieure à la date de fin.")
+                # Fallback to default or empty data
+                invoices_to_filter = invoices_to_filter.none() # No invoices
+            else:
+                invoices_to_filter = invoices_to_filter.filter(issue_date__range=[start_date_range, end_date_range])
+        except ValueError:
+            messages.error(request, "Format de date invalide.")
+            invoices_to_filter = invoices_to_filter.none() # No invoices if dates are invalid
+    else: # Default if no period or custom is not fully specified
+        start_date_range = today - timedelta(days=29)
+        end_date_range = today
+        invoices_to_filter = invoices_to_filter.filter(issue_date__range=[start_date_range, end_date_range])
+
+
+    # --- Calcul des indicateurs clés (KPIs) ---
+    total_invoices = invoices_to_filter.count()
+    total_clients = Client.objects.filter(user=user).count()
+    total_products = Product.objects.filter(user=user).count()
+    
+    total_revenue = invoices_to_filter.filter(status='Paid').aggregate(Sum('total_amount'))['total_amount__sum'] or 0
+    pending_invoices_amount = invoices_to_filter.filter(status__in=['Sent', 'Partially Paid']).aggregate(Sum('total_amount'))['total_amount__sum'] or 0
+    overdue_invoices_count = invoices_to_filter.filter(due_date__lt=today, status__in=['Sent', 'Partially Paid']).count()
+
+
+    # --- Données pour les graphiques ---
+    # Définir les labels des mois en fonction de la période sélectionnée
+    labels = []
+    invoices_by_month_data = []
+    revenue_by_month_data = []
+
+    if selected_period == 'last_12_months':
+        # Pour les 12 derniers mois, collecter les mois réels
+        current_month = today.month
+        current_year = today.year
+        
+        # Initialiser les données pour 12 mois
+        monthly_data_invoices = OrderedDict()
+        monthly_data_revenue = OrderedDict()
+
+        for i in range(12):
+            month_obj = (date(current_year, current_month, 1) - timedelta(days=1)).replace(day=1) + timedelta(days=1)
+            # month_obj est le 1er du mois en cours
+            labels.insert(0, month_obj.strftime('%b %Y')) # 'Jan 2024'
+            monthly_data_invoices[month_obj.strftime('%b %Y')] = 0
+            monthly_data_revenue[month_obj.strftime('%b %Y')] = 0
+            
+            current_month -= 1
+            if current_month == 0:
+                current_month = 12
+                current_year -= 1
+
+        # Récupérer les données brutes de la base de données pour les 12 derniers mois
+        # Utiliser ExtractMonth et ExtractYear pour les agrégations sur plusieurs années
+        invoices_counts = invoices_to_filter.annotate(month=ExtractMonth('issue_date'), year=ExtractYear('issue_date')) \
+                                             .values('year', 'month') \
+                                             .annotate(count=Count('id')) \
+                                             .order_by('year', 'month')
+
+        revenues = invoices_to_filter.filter(status='Paid').annotate(month=ExtractMonth('issue_date'), year=ExtractYear('issue_date')) \
+                                      .values('year', 'month') \
+                                      .annotate(total_revenue=Sum('total_amount')) \
+                                      .order_by('year', 'month')
+        
+        # Remplir les OrderedDict avec les données
+        for entry in invoices_counts:
+            month_label = date(entry['year'], entry['month'], 1).strftime('%b %Y')
+            if month_label in monthly_data_invoices:
+                monthly_data_invoices[month_label] = entry['count']
+
+        for entry in revenues:
+            month_label = date(entry['year'], entry['month'], 1).strftime('%b %Y')
+            if month_label in monthly_data_revenue:
+                monthly_data_revenue[month_label] = float(entry['total_revenue'])
+
+        invoices_by_month_data = list(monthly_data_invoices.values())
+        revenue_by_month_data = list(monthly_data_revenue.values())
+
+    else: # Pour 'this_year', 'last_year', 'last_30_days', 'custom' (s'il y a un an)
+        # La logique de 'this_year' (ou autre période par mois)
+        # Initialiser les 12 mois de l'année courante ou de la période donnée
+        
+        # Déterminer la plage de mois à afficher
+        if selected_period == 'this_year':
+            year = today.year
+            start_month = 1
+            end_month = today.month # Jusqu'au mois courant
+        elif selected_period == 'last_year':
+            year = today.year - 1
+            start_month = 1
+            end_month = 12
+        else: # last_30_days ou custom: on utilise une granularité journalière ou mensuelle si la plage est longue
+            # Pour des périodes plus courtes comme 'last_30_days' ou 'custom',
+            # il est préférable d'afficher les jours ou de regrouper par mois si la période est sur plusieurs mois.
+            # Ici, pour simplifier, nous allons continuer avec la logique mensuelle
+            # et si la plage est très courte, le graphique sera moins pertinent ou vide.
+            # Idéalement, pour 'last_30_days', on regrouperait par jour.
+            
+            # Pour la démo, si custom ou last_30_days s'étend sur plusieurs mois, on agrège par mois.
+            # Sinon, on peut rester sur les mois de l'année en cours pour ne pas compliquer.
+            # Pour une meilleure UX, vous pourriez ajouter une logique pour choisir la granularité (jour/mois)
+            # en fonction de la durée de `start_date_range` et `end_date_range`.
+            year = start_date_range.year # On prend l'année de début comme référence
+            start_month = start_date_range.month
+            end_month = end_date_range.month
+            if start_date_range.year != end_date_range.year:
+                # Si la période s'étend sur plusieurs années, il faut adapter la logique des labels
+                # Pour cet exemple, je vais simplifier et supposer que custom est souvent dans la même année ou 12 mois
+                # Pour le moment, on se base sur les mois de l'année de la date de début.
+                # Une vraie implémentation pourrait générer des labels 'Jan 2023', 'Feb 2023', 'Jan 2024' etc.
+                labels = [date(m,1,1).strftime('%b') for m in range(start_month, 13)] + [date(m,1,1).strftime('%b') for m in range(1, end_month + 1)]
+                # Pour un cas réel, il faudrait générer les labels complets de date/mois/année pour la période.
+                # Ceci est une simplification.
+                labels = []
+                current_date = start_date_range
+                while current_date <= end_date_range:
+                    labels.append(current_date.strftime('%b %Y'))
+                    # Avancer d'un mois
+                    if current_date.month == 12:
+                        current_date = date(current_date.year + 1, 1, 1)
+                    else:
+                        current_date = date(current_date.year, current_date.month + 1, 1)
+
+                # Réinitialiser les dictionnaires pour la période personnalisée
+                monthly_data_invoices = OrderedDict((label, 0) for label in labels)
+                monthly_data_revenue = OrderedDict((label, 0) for label in labels)
+
+                invoices_counts = invoices_to_filter.annotate(month=ExtractMonth('issue_date'), year=ExtractYear('issue_date')) \
+                                                     .values('year', 'month') \
+                                                     .annotate(count=Count('id')) \
+                                                     .order_by('year', 'month')
+                revenues = invoices_to_filter.filter(status='Paid').annotate(month=ExtractMonth('issue_date'), year=ExtractYear('issue_date')) \
+                                              .values('year', 'month') \
+                                              .annotate(total_revenue=Sum('total_amount')) \
+                                              .order_by('year', 'month')
+
+                for entry in invoices_counts:
+                    month_label = date(entry['year'], entry['month'], 1).strftime('%b %Y')
+                    if month_label in monthly_data_invoices:
+                        monthly_data_invoices[month_label] = entry['count']
+
+                for entry in revenues:
+                    month_label = date(entry['year'], entry['month'], 1).strftime('%b %Y')
+                    if month_label in monthly_data_revenue:
+                        monthly_data_revenue[month_label] = float(entry['total_revenue'])
+
+                invoices_by_month_data = list(monthly_data_invoices.values())
+                revenue_by_month_data = list(monthly_data_revenue.values())
+                
+            else: # Période custom ou last_30_days dans la même année
+                labels = [month_abbr[m] for m in range(1, 13)] # Labels pour tous les mois
+                
+                # Initialiser tous les mois de l'année à 0
+                monthly_data_invoices = OrderedDict()
+                monthly_data_revenue = OrderedDict()
+                for i in range(1, 13):
+                    monthly_data_invoices[month_abbr[i]] = 0
+                    monthly_data_revenue[month_abbr[i]] = 0
+
+                invoices_counts = invoices_to_filter.filter(issue_date__year=year).annotate(month=ExtractMonth('issue_date')) \
+                                                     .values('month') \
+                                                     .annotate(count=Count('id')) \
+                                                     .order_by('month')
+                revenues = invoices_to_filter.filter(status='Paid', issue_date__year=year).annotate(month=ExtractMonth('issue_date')) \
+                                              .values('month') \
+                                              .annotate(total_revenue=Sum('total_amount')) \
+                                              .order_by('month')
+                
+                for entry in invoices_counts:
+                    month_name = month_abbr[entry['month']]
+                    monthly_data_invoices[month_name] = entry['count']
+
+                for entry in revenues:
+                    month_name = month_abbr[entry['month']]
+                    monthly_data_revenue[month_name] = float(entry['total_revenue'])
+                
+                invoices_by_month_data = list(monthly_data_invoices.values())
+                revenue_by_month_data = list(monthly_data_revenue.values())
+
+
+    # --- Activité Récente ---
+    recent_invoices = user_invoices.order_by('-issue_date')[:5]
+    recent_clients = Client.objects.filter(user=user).order_by('-created_at')[:5]
+
+    context = {
+        'selected_period': selected_period,
+        'start_date_filter': start_date_filter,
+        'end_date_filter': end_date_filter,
+        'total_invoices': total_invoices,
+        'total_clients': total_clients,
+        'total_products': total_products,
+        'total_revenue': total_revenue,
+        'pending_invoices_amount': pending_invoices_amount,
+        'overdue_invoices_count': overdue_invoices_count,
+        'labels': json.dumps(labels), # Assurez-vous que labels est une liste des noms de mois/périodes
+        'invoices_by_month_data': json.dumps(invoices_by_month_data),
+        'revenue_by_month_data': json.dumps(revenue_by_month_data),
+        'recent_invoices': recent_invoices,
+        'recent_clients': recent_clients,
+    }
+    return render(request, 'dashboard.html', context)
+
+
+
+def home(request):
+    return render(request, 'core/home.html')
+
+def register_view(request):
+    if request.method == 'POST':
+        form = CustomUserCreationForm(request.POST) # Utilisez votre CustomUserCreationForm
+        if form.is_valid():
+            user = form.save(commit=False) # Ne pas sauvegarder tout de suite
+            user.is_active = False # L'utilisateur n'est pas actif tant que l'email n'est pas confirmé
+            user.save()
+
+            # Envoyer l'email de confirmation
+            send_confirmation_email(request, user)
+
+            messages.success(request, "Votre compte a été créé. Veuillez vérifier votre adresse e-mail pour activer votre compte.")
+            return redirect('login') # Rediriger vers la page de connexion
+        else:
+            messages.error(request, "Erreur lors de la création du compte. Veuillez corriger les erreurs.")
+    else:
+        form = CustomUserCreationForm()
+    return render(request, 'registration/register.html', {'form': form})
+
+def send_confirmation_email(request, user):
+    serializer = URLSafeTimedSerializer(settings.SECRET_KEY)
+    token = serializer.dumps({'user_id': user.pk, 'email': user.email})
+    current_site = get_current_site(request)
+    mail_subject = 'Activez votre compte Facturo'
+    message = render_to_string('emails/account_activation_email.html', {
+        'user': user,
+        'domain': current_site.domain,
+        'uid': user.pk, # Ou encodez l'ID utilisateur comme vous le souhaitez
+        'token': token,
+        'protocol': 'https' if request.is_secure() else 'http',
+    })
+    email = EmailMessage(
+        mail_subject, message, to=[user.email]
+    )
+    try:
+        email.send()
+        messages.info(request, "Un e-mail de confirmation a été envoyé à votre adresse. Veuillez le vérifier pour activer votre compte.")
+    except Exception as e:
+        messages.error(request, f"Impossible d'envoyer l'e-mail de confirmation. Veuillez contacter le support. Erreur: {e}")
+
+
+
+        
+def activate_account(request, activation_token): # Renommez 'token' en 'activation_token' ici
+    try:
+        serializer = URLSafeTimedSerializer(settings.SECRET_KEY)
+        data = serializer.loads(activation_token, max_age=60*60*24) # Utilisez activation_token ici
+        user = User.objects.get(pk=data['user_id'], email=data['email'])
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist, SignatureExpired, BadTimeSignature):
+        user = None
+
+    if user is not None and not user.email_confirmed:
+        user.is_active = True
+        user.email_confirmed = True
+        user.save()
+        messages.success(request, "Votre compte a été activé avec succès ! Vous pouvez maintenant vous connecter.")
+        return redirect('login')
+    else:
+        messages.error(request, "Le lien d'activation est invalide ou a expiré, ou votre compte est déjà activé.")
+        return redirect('home') # Ou une page d'erreur spécifique
+
+def login_view(request):
+    if request.method == 'POST':
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            username = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
+            user = authenticate(request, username=username, password=password) # Utilisez request dans authenticate
+            if user is not None:
+                if user.is_active and user.email_confirmed: # Vérifiez si le compte est actif et l'email confirmé
+                    login(request, user)
+                    messages.success(request, f"Bienvenue, {username} !")
+                    return redirect('home')
+                elif not user.email_confirmed:
+                    messages.warning(request, "Votre compte n'a pas encore été activé. Veuillez vérifier votre e-mail.")
+                    # Optionnel: Proposer de renvoyer l'email de confirmation
+                    return render(request, 'registration/resend_confirmation.html', {'user_email': user.email})
+                else: # if not user.is_active (pas email_confirmed)
+                    messages.error(request, "Votre compte est inactif. Veuillez contacter l'administrateur.")
+            else:
+                messages.error(request, "Nom d'utilisateur ou mot de passe incorrect.")
+        else:
+            messages.error(request, "Nom d'utilisateur ou mot de passe incorrect.")
+    else:
+        form = AuthenticationForm()
+    return render(request, 'registration/login.html', {'form': form})
+
+@login_required
+def logout_view(request):
+    logout(request)
+    messages.info(request, "Vous avez été déconnecté.")
+    return redirect('home')
+
+
+
+
+
+''' 
+def register_view(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            messages.success(request, "Compte créé et connecté avec succès !")
+            return redirect('home')
+        else:
+            messages.error(request, "Erreur lors de la création du compte. Veuillez corriger les erreurs.")
+    else:
+        form = UserCreationForm()
+    return render(request, 'registration/register.html', {'form': form})
+
+
+
+
+
+def login_view(request):
+    if request.method == 'POST':
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            username = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                login(request, user)
+                messages.success(request, f"Bienvenue, {username} !")
+                return redirect('home')
+            else:
+                messages.error(request, "Nom d'utilisateur ou mot de passe incorrect.")
+        else:
+            messages.error(request, "Nom d'utilisateur ou mot de passe incorrect.")
+    else:
+        form = AuthenticationForm()
+    return render(request, 'registration/login.html', {'form': form})
+
+@login_required
+def logout_view(request):
+    logout(request)
+    messages.info(request, "Vous avez été déconnecté.")
+    return redirect('home')
+
+'''
+
+
+
+@login_required
+def company_settings_view(request):
+    try:
+        company_profile = CompanyProfile.objects.get(user=request.user)
+    except CompanyProfile.DoesNotExist:
+        company_profile = CompanyProfile(user=request.user)
+
+    if request.method == 'POST':
+        form = CompanyProfileForm(request.POST, request.FILES, instance=company_profile)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Profil d'entreprise mis à jour avec succès !")
+            return redirect('company_settings')
+        else:
+            messages.error(request, "Erreur lors de la mise à jour du profil d'entreprise.")
+    else:
+        form = CompanyProfileForm(instance=company_profile)
+    return render(request, 'company_settings.html', {'form': form})
+
+
+
+
+# --- Mixins personnalisés ---
+class OwnerRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
+    """
+    Mixin pour s'assurer que l'utilisateur est connecté et est le propriétaire de l'objet.
+    """
+    def test_func(self):
+        obj = self.get_object()
+        return obj.user == self.request.user
+
+# --- Vues pour Client ---
+class ClientListView(LoginRequiredMixin, ListView):
+    model = Client
+    template_name = 'clients/client_list.html'
+    context_object_name = 'clients'
+    paginate_by = 10
+
+    def get_queryset(self):
+        return Client.objects.filter(user=self.request.user)
+
+class ClientCreateView(LoginRequiredMixin, CreateView):
+    model = Client
+    form_class = ClientForm
+    template_name = 'clients/client_form.html'
+    success_url = reverse_lazy('client_list')
+
+    def form_valid(self, form):
+        form.instance.user = self.request.user
+        messages.success(self.request, "Client créé avec succès !")
+        return super().form_valid(form)
+
+class ClientUpdateView(OwnerRequiredMixin, UpdateView):
+    model = Client
+    form_class = ClientForm
+    template_name = 'clients/client_form.html'
+    context_object_name = 'client'
+
+    def get_success_url(self):
+        messages.success(self.request, "Client mis à jour avec succès !")
+        return reverse_lazy('client_list')
+
+class ClientDeleteView(OwnerRequiredMixin, DeleteView):
+    model = Client
+    template_name = 'clients/client_confirm_delete.html'
+    context_object_name = 'client'
+    success_url = reverse_lazy('client_list')
+
+    def form_valid(self, form):
+        messages.success(self.request, "Client supprimé avec succès !")
+        return super().form_valid(form)
+
+class ClientDetailView(OwnerRequiredMixin, DetailView):
+    model = Client
+    template_name = 'clients/client_detail.html'
+    context_object_name = 'client'
+
+# --- Vues pour Product ---
+class ProductListView(LoginRequiredMixin, ListView):
+    model = Product
+    template_name = 'products/product_list.html'
+    context_object_name = 'products'
+    paginate_by = 10
+
+    def get_queryset(self):
+        return Product.objects.filter(user=self.request.user)
+
+class ProductCreateView(LoginRequiredMixin, CreateView):
+    model = Product
+    form_class = ProductForm
+    template_name = 'products/product_form.html'
+    success_url = reverse_lazy('product_list')
+
+    def form_valid(self, form):
+        form.instance.user = self.request.user
+        messages.success(self.request, "Produit créé avec succès !")
+        return super().form_valid(form)
+
+class ProductUpdateView(OwnerRequiredMixin, UpdateView):
+    model = Product
+    form_class = ProductForm
+    template_name = 'products/product_form.html'
+    context_object_name = 'product'
+
+    def get_success_url(self):
+        messages.success(self.request, "Produit mis à jour avec succès !")
+        return reverse_lazy('product_list')
+
+class ProductDeleteView(OwnerRequiredMixin, DeleteView):
+    model = Product
+    template_name = 'products/product_confirm_delete.html'
+    context_object_name = 'product'
+    success_url = reverse_lazy('product_list')
+
+    def form_valid(self, form):
+        messages.success(self.request, "Produit supprimé avec succès !")
+        return super().form_valid(form)
+
+# --- Vues pour Invoice ---
+class InvoiceListView(LoginRequiredMixin, ListView):
+    model = Invoice
+    template_name = 'invoices/invoice_list.html'
+    context_object_name = 'invoices'
+    paginate_by = 10
+
+    def get_queryset(self):
+        # Pré-charger les clients pour éviter les requêtes N+1
+        return Invoice.objects.filter(user=self.request.user).select_related('client').order_by('-issue_date')
+
+
+
+
+class InvoiceCreateView(LoginRequiredMixin, CreateView):
+    model = Invoice
+    form_class = InvoiceForm
+    template_name = 'invoices/invoice_form.html'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user # Passer l'utilisateur au formulaire pour filtrer les clients
+        return kwargs
+    
+    def get_context_data(self, **kwargs):
+        data = super().get_context_data(**kwargs)
+        # Assurez-vous que l'instance est disponible pour le formset
+        # Si la vue est en POST, self.object est déjà défini par form_valid
+        # Si la vue est en GET (première fois), self.object est None
+        invoice_instance = self.object if self.object else None
+
+        if self.request.POST:
+            data['items'] = InvoiceItemFormSet(self.request.POST, instance=invoice_instance, prefix='item', form_kwargs={'user': self.request.user})
+        else:
+            data['items'] = InvoiceItemFormSet(instance=invoice_instance, prefix='item', form_kwargs={'user': self.request.user})
+        return data
+
+    def form_valid(self, form):
+        context = self.get_context_data()
+        items_formset = context['items']
+
+        with transaction.atomic():
+            form.instance.user = self.request.user
+            self.object = form.save(commit=False) # Ne pas sauvegarder encore la facture
+            # Sauvegarder la facture pour lui donner un pk (ID) avant les items
+            # C'est crucial pour l'association des items
+            if not self.object.pk:
+                self.object.save()
+            
+            # Re-associer l'instance de la facture au formset
+            items_formset.instance = self.object
+
+            if items_formset.is_valid():
+                items_formset.save()
+                self.object.calculate_totals()
+                messages.success(self.request, "Facture créée avec succès !")
+                return redirect(self.object.get_absolute_url())
+            else:
+                messages.error(self.request, "Erreur lors de la création de la facture. Veuillez vérifier les articles.")
+                # Si le formset est invalide, la facture parente doit être supprimée si elle a été créée sans items valides
+                # Ou mieux, ne pas appeler form.save() avant de valider le formset.
+                # Pour l'instant, on se base sur self.object = form.save() initial,
+                # donc si items_formset.is_valid() échoue, on affiche juste l'erreur
+                return self.form_invalid(form) # Retourne le formulaire avec les erreurs
+
+    def get_success_url(self):
+        return reverse_lazy('invoice_detail', kwargs={'pk': self.object.pk})
+
+
+
+class InvoiceUpdateView(OwnerRequiredMixin, UpdateView):
+    model = Invoice
+    form_class = InvoiceForm
+    template_name = 'invoices/invoice_form.html'
+    context_object_name = 'invoice'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        data = super().get_context_data(**kwargs)
+        if self.request.POST:
+            data['items'] = InvoiceItemFormSet(self.request.POST, instance=self.object, prefix='item', form_kwargs={'user': self.request.user})
+        else:
+            data['items'] = InvoiceItemFormSet(instance=self.object, prefix='item', form_kwargs={'user': self.request.user})
+        return data
+
+    def form_valid(self, form):
+        context = self.get_context_data()
+        items_formset = context['items']
+
+        with transaction.atomic():
+            self.object = form.save() # Sauvegarde la facture parente
+            
+            # Re-associer l'instance de la facture au formset
+            items_formset.instance = self.object
+
+            if items_formset.is_valid():
+                items_formset.save()
+                self.object.calculate_totals()
+                messages.success(self.request, "Facture mise à jour avec succès !")
+                return redirect(self.object.get_absolute_url())
+            else:
+                messages.error(self.request, "Erreur lors de la mise à jour de la facture. Veuillez vérifier les articles.")
+                return self.form_invalid(form)
+
+    def get_success_url(self):
+        return reverse_lazy('invoice_detail', kwargs={'pk': self.object.pk})
+
+
+
+
+
+class InvoiceDeleteView(OwnerRequiredMixin, DeleteView):
+    model = Invoice
+    template_name = 'invoices/invoice_confirm_delete.html'
+    context_object_name = 'invoice'
+    success_url = reverse_lazy('invoice_list')
+
+    def form_valid(self, form):
+        messages.success(self.request, "Facture supprimée avec succès !")
+        return super().form_valid(form)
+
+class InvoiceDetailView(OwnerRequiredMixin, DetailView):
+    model = Invoice
+    template_name = 'invoices/invoice_detail.html'
+    context_object_name = 'invoice'
+
+def search_clients(request):
+    query = request.GET.get('q')
+    
+    # Commencez par tous les clients de l'utilisateur
+    clients_list = Client.objects.filter(user=request.user).order_by('name') # Ajoute un ordre par défaut
+
+    if query:
+        # Si une requête est présente, filtrez la liste
+        clients_list = clients_list.filter(
+            Q(name__icontains=query) |
+            Q(email__icontains=query) |
+            Q(address__icontains=query) |
+            Q(phone__icontains=query)
+        ).distinct()
+    
+    # Initialise le Paginator avec la liste filtrée ou complète des clients
+    paginator = Paginator(clients_list, 10)  # 10 clients par page
+    page = request.GET.get('page')
+
+    try:
+        # Tente de récupérer la page demandée
+        clients = paginator.page(page)
+    except PageNotAnInteger:
+        # Si 'page' n'est pas un entier, afficher la première page
+        clients = paginator.page(1)
+    except EmptyPage:
+        # Si la page est hors de portée (par exemple, 99999), affichez la dernière page
+        clients = paginator.page(paginator.num_pages)
+
+    # Passe la variable paginée 'clients' (qui est en fait un objet Page)
+    # au template sous le nom 'page_obj' comme attendu par le template.
+    return render(request, 'clients/client_list.html', {'page_obj': clients, 'query': query})
+
+
+def get_product_details_api(request, pk):
+    try:
+        product = Product.objects.get(pk=pk, user=request.user)
+        data = {
+            'name': product.name,
+            'description': product.description,
+            'unit_price': str(product.unit_price), # Convertir en chaîne pour JSON
+            'tax_rate': str(product.tax_rate),
+            'sku': product.sku,
+        }
+        return JsonResponse(data)
+    except Product.DoesNotExist:
+        return JsonResponse({'error': 'Produit non trouvé'}, status=404)
+
+
+
+
+
+@login_required
+def generate_invoice_pdf(request, pk):
+    try:
+        invoice = Invoice.objects.get(pk=pk, user=request.user)
+    except Invoice.DoesNotExist:
+        messages.error(request, "Facture introuvable.")
+        return redirect('invoice_list')
+
+    # Contexte pour le template PDF
+    context = {
+        'invoice': invoice,
+        'company': invoice.company_profile, # Utilisez le profil d'entreprise associé à la facture
+        'client': invoice.client,
+    }
+
+    # Rendre le template HTML en string
+    html_string = render_to_string('invoices/invoice_pdf_template.html', context)
+    html = HTML(string=html_string, base_url=request.build_absolute_uri())
+
+    # Définir le CSS
+    css_string = render_to_string('invoices/invoice_pdf_style.css')
+    css = CSS(string=css_string)
+
+    # Générer le PDF
+    pdf_file = html.write_pdf(stylesheets=[css])
+
+    response = HttpResponse(pdf_file, content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="facture_{invoice.invoice_number}.pdf"'
+    return response
+
+
+
+@login_required
+def send_invoice_email(request, pk):
+    try:
+        invoice = Invoice.objects.get(pk=pk, user=request.user)
+    except Invoice.DoesNotExist:
+        messages.error(request, "Facture introuvable.")
+        return redirect('invoice_list')
+
+    if request.method == 'POST':
+        # Données du formulaire d'envoi (si vous en avez un)
+        # Pour l'instant, on prend l'email du client par défaut et un message simple
+        recipient_email = request.POST.get('recipient_email', invoice.client.email)
+        subject_template = f"Votre facture {invoice.invoice_number} de {invoice.company_profile.name}"
+        message_body_template = render_to_string('emails/invoice_email_body.html', {
+            'invoice': invoice,
+            'client_name': invoice.client.name,
+            'company_name': invoice.company_profile.name,
+            'user': request.user,
+        })
+        custom_message = request.POST.get('custom_message', '') # Optionnel: message personnalisé
+
+        if custom_message:
+            message_body_template = f"{custom_message}\n\n{message_body_template}"
+
+
+        # Générer le PDF en tant que pièce jointe
+        context_pdf = {
+            'invoice': invoice,
+            'company': invoice.company_profile,
+            'client': invoice.client,
+        }
+        html_string_pdf = render_to_string('invoices/invoice_pdf_template.html', context_pdf)
+        html_pdf = HTML(string=html_string_pdf, base_url=request.build_absolute_uri())
+        css_string_pdf = render_to_string('invoices/invoice_pdf_style.css')
+        css_pdf = CSS(string=css_string_pdf)
+        pdf_file = html_pdf.write_pdf(stylesheets=[css_pdf])
+
+        # Créer l'email
+        email = EmailMessage(
+            subject=subject_template,
+            body=message_body_template,
+            from_email=request.user.email, # L'expéditeur sera l'email de l'utilisateur ou le DEFAULT_FROM_EMAIL
+            to=[recipient_email],
+        )
+        email.attach(f'Facture_{invoice.invoice_number}.pdf', pdf_file, 'application/pdf')
+
+        try:
+            email.send()
+            messages.success(request, f"Facture {invoice.invoice_number} envoyée avec succès à {recipient_email} !")
+            # Mettre à jour le statut de la facture si elle était en brouillon
+            if invoice.status == 'Draft':
+                invoice.status = 'Sent'
+                invoice.save()
+        except Exception as e:
+            messages.error(request, f"Erreur lors de l'envoi de la facture : {e}")
+
+        return redirect('invoice_detail', pk=invoice.pk)
+    
+    # Pour la méthode GET, affichez un formulaire ou une page de confirmation
+    return render(request, 'invoices/invoice_send_email.html', {'invoice': invoice, 'default_email': invoice.client.email})
+
+
+
+@login_required
+def export_invoices_report(request):
+    user_invoices = Invoice.objects.filter(user=request.user)
+
+    # Récupérer les mêmes paramètres de filtrage que le tableau de bord
+    period = request.GET.get('period', 'last_12_months')
+    start_date_filter = request.GET.get('start_date')
+    end_date_filter = request.GET.get('end_date')
+
+    end_date = timezone.now().date()
+    start_date = end_date - timedelta(days=365) # Valeur par défaut
+
+    if period == 'last_30_days':
+        start_date = end_date - timedelta(days=30)
+    elif period == 'this_year':
+        start_date = date(end_date.year, 1, 1)
+        end_date = date(end_date.year, 12, 31)
+    elif period == 'last_year':
+        start_date = date(end_date.year - 1, 1, 1)
+        end_date = date(end_date.year - 1, 12, 31)
+    elif period == 'custom' and start_date_filter and end_date_filter:
+        try:
+            start_date = datetime.strptime(start_date_filter, '%Y-%m-%d').date()
+            end_date = datetime.strptime(end_date_filter, '%Y-%m-%d').date()
+        except ValueError:
+            messages.error(request, "Format de date invalide pour l'export. Veuillez utiliser AAAA-MM-JJ.")
+            # Revert to default or handle error appropriately
+            start_date = end_date - timedelta(days=365)
+            end_date = timezone.now().date()
+
+    # Filtrer les factures dans la période sélectionnée
+    filtered_invoices = user_invoices.filter(
+        issue_date__gte=start_date,
+        issue_date__lte=end_date
+    ).select_related('client', 'company_profile') # Optimisation des requêtes
+
+    # Préparer les données pour pandas
+    data = []
+    for invoice in filtered_invoices:
+        data.append({
+            'Numero Facture': invoice.invoice_number,
+            'Client': invoice.client.name,
+            'Date Emission': invoice.issue_date,
+            'Date Echeance': invoice.due_date,
+            'Statut': invoice.get_status_display(),
+            'Sous-Total (FCFA)': float(invoice.subtotal),
+            'Montant TVA (FCFA)': float(invoice.tax_amount),
+            'Remise (%)': float(invoice.discount),
+            'Frais Port (FCFA)': float(invoice.shipping_cost),
+            'Total TTC (FCFA)': float(invoice.total_amount),
+            'Emetteur': invoice.company_profile.name if invoice.company_profile else 'N/A',
+            'Notes': invoice.notes,
+        })
+
+    df = pd.DataFrame(data)
+
+    # Préparer la réponse HTTP pour le fichier Excel
+    output = BytesIO()
+    writer = pd.ExcelWriter(output, engine='openpyxl')
+    df.to_excel(writer, sheet_name='Factures', index=False)
+    writer.close() # Utilisez writer.close() pour les versions récentes de pandas
+    output.seek(0) # Remettre le curseur au début du fichier
+
+    filename = f"rapport_factures_{start_date}_{end_date}.xlsx"
+    response = HttpResponse(output.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+
+
+# Vue pour l'exportation CSV (similaire, mais utilisant to_csv)
+@login_required
+def export_invoices_report_csv(request):
+    user_invoices = Invoice.objects.filter(user=request.user)
+
+    # Récupérer les mêmes paramètres de filtrage que le tableau de bord
+    period = request.GET.get('period', 'last_12_months')
+    start_date_filter = request.GET.get('start_date')
+    end_date_filter = request.GET.get('end_date')
+
+    end_date = timezone.now().date()
+    start_date = end_date - timedelta(days=365) # Valeur par défaut
+
+    if period == 'last_30_days':
+        start_date = end_date - timedelta(days=30)
+    elif period == 'this_year':
+        start_date = date(end_date.year, 1, 1)
+        end_date = date(end_date.year, 12, 31)
+    elif period == 'last_year':
+        start_date = date(end_date.year - 1, 1, 1)
+        end_date = date(end_date.year - 1, 12, 31)
+    elif period == 'custom' and start_date_filter and end_date_filter:
+        try:
+            start_date = datetime.strptime(start_date_filter, '%Y-%m-%d').date()
+            end_date = datetime.strptime(end_date_filter, '%Y-%m-%d').date()
+        except ValueError:
+            messages.error(request, "Format de date invalide pour l'export. Veuillez utiliser AAAA-MM-JJ.")
+            start_date = end_date - timedelta(days=365)
+            end_date = timezone.now().date()
+
+    filtered_invoices = user_invoices.filter(
+        issue_date__gte=start_date,
+        issue_date__lte=end_date
+    ).select_related('client', 'company_profile')
+
+    data = []
+    for invoice in filtered_invoices:
+        data.append({
+            'Numero Facture': invoice.invoice_number,
+            'Client': invoice.client.name,
+            'Date Emission': invoice.issue_date,
+            'Date Echeance': invoice.due_date,
+            'Statut': invoice.get_status_display(),
+            'Sous-Total (FCFA)': float(invoice.subtotal),
+            'Montant TVA (FCFA)': float(invoice.tax_amount),
+            'Remise (%)': float(invoice.discount),
+            'Frais Port (FCFA)': float(invoice.shipping_cost),
+            'Total TTC (FCFA)': float(invoice.total_amount),
+            'Emetteur': invoice.company_profile.name if invoice.company_profile else 'N/A',
+            'Notes': invoice.notes,
+        })
+
+    df = pd.DataFrame(data)
+
+    response = HttpResponse(content_type='text/csv')
+    filename = f"rapport_factures_{start_date}_{end_date}.csv"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    df.to_csv(response, index=False, encoding='utf-8-sig') # Utilisez utf-8-sig pour les caractères spéciaux
+
+    return response
+
+
+
+
+
+
+def resend_activation_email(request):
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        try:
+            user = User.objects.get(email=email, email_confirmed=False)
+            send_confirmation_email(request, user)
+            messages.success(request, "Un nouvel e-mail de confirmation a été envoyé. Vérifiez votre boîte de réception.")
+        except User.DoesNotExist:
+            messages.error(request, "Aucun compte inactif trouvé pour cette adresse e-mail.")
+        return redirect('login')
+    return redirect('home') # Ou une page d'erreur
+
+
+

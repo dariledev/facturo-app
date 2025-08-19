@@ -1,0 +1,88 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Détail du client : {{ client.name }}{% endblock %}
+
+{% block content %}
+<h1 class="title is-4">Détail du client : {{ client.name }}</h1>
+
+<div class="buttons">
+    <a href="{% url 'client_update' client.pk %}" class="button is-info">
+        <span class="icon"><i class="fas fa-edit"></i></span>
+        <span>Modifier</span>
+    </a>
+    <a href="{% url 'client_delete' client.pk %}" class="button is-danger">
+        <span class="icon"><i class="fas fa-trash-alt"></i></span>
+        <span>Supprimer</span>
+    </a>
+    <a href="{% url 'client_list' %}" class="button is-light">
+        <span class="icon"><i class="fas fa-arrow-left"></i></span>
+        <span>Retour à la liste</span>
+    </a>
+</div>
+
+<div class="box">
+    <h3 class="title is-5">Informations du Client</h3>
+    <p><strong>Nom :</strong> {{ client.name }}</p>
+    <p><strong>Contact :</strong> {{ client.contact_person|default:"N/A" }}</p>
+    <p><strong>Email :</strong> {{ client.email|default:"N/A" }}</p>
+    <p><strong>Téléphone :</strong> {{ client.phone|default:"N/A" }}</p>
+    <p><strong>Adresse :</strong> {{ client.address|linebreaksbr }}</p>
+    <p><strong>Infos fiscales :</strong> {{ client.tax_info|default:"N/A" }}</p>
+    <p><strong>Notes :</strong> {{ client.notes|default:"N/A" }}</p>
+    <p><strong>Créé le :</strong> {{ client.created_at|date:"d M Y H:i" }}</p>
+    <p><strong>Mis à jour le :</strong> {{ client.updated_at|date:"d M Y H:i" }}</p>
+</div>
+
+<hr>
+
+<h3 class="title is-4">Historique des factures de {{ client.name }}</h3>
+{% if client.invoices.all %}
+    <div class="table-container">
+        <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth">
+            <thead>
+                <tr>
+                    <th>Numéro Facture</th>
+                    <th>Date d'émission</th>
+                    <th>Date d'échéance</th>
+                    <th>Montant Total</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for invoice in client.invoices.all %}
+                <tr>
+                    <td><a href="{% url 'invoice_detail' invoice.pk %}">{{ invoice.invoice_number }}</a></td>
+                    <td>{{ invoice.issue_date|date:"d M Y" }}</td>
+                    <td>{{ invoice.due_date|date:"d M Y"|default:"N/A" }}</td>
+                    <td>{{ invoice.total_amount }} FCFA</td>
+                    <td>
+                        <span class="tag
+                            {% if invoice.status == 'Draft' %}is-light{% elif invoice.status == 'Sent' %}is-info{% elif invoice.status == 'Paid' %}is-success{% elif invoice.status == 'Partially Paid' %}is-warning{% elif invoice.status == 'Overdue' %}is-danger{% else %}is-dark{% endif %}">
+                            {{ invoice.get_status_display }}
+                        </span>
+                    </td>
+                    <td class="has-text-centered">
+                        <a href="{% url 'invoice_detail' invoice.pk %}" class="button is-small is-info is-light" title="Voir">
+                            <span class="icon"><i class="fas fa-eye"></i></span>
+                        </a>
+                        <a href="{% url 'invoice_update' invoice.pk %}" class="button is-small is-warning is-light" title="Modifier">
+                            <span class="icon"><i class="fas fa-edit"></i></span>
+                        </a>
+                        <a href="{% url 'invoice_delete' invoice.pk %}" class="button is-small is-danger is-light" title="Supprimer">
+                            <span class="icon"><i class="fas fa-trash-alt"></i></span>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <div class="notification is-warning is-light">
+        Ce client n'a pas encore de factures.
+        <a href="{% url 'invoice_create' %}" class="button is-small is-link is-outlined">Créer une facture pour {{ client.name }}</a>
+    </div>
+{% endif %}
+
+{% endblock %}

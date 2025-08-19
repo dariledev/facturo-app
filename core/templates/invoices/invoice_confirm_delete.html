@@ -1,0 +1,24 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Confirmer la suppression de la facture{% endblock %}
+
+{% block content %}
+<h1 class="title is-1 has-text-danger">Supprimer la Facture</h1>
+
+<div class="notification is-danger">
+    <p>Êtes-vous sûr de vouloir supprimer la facture numéro : <strong>{{ invoice.invoice_number }}</strong> pour <strong>{{ invoice.client.name }}</strong> ?</p>
+    <p>Cette action est irréversible.</p>
+</div>
+
+<form method="post">
+    {% csrf_token %}
+    <div class="field is-grouped">
+        <div class="control">
+            <button type="submit" class="button is-danger">Oui, Supprimer</button>
+        </div>
+        <div class="control">
+            <a href="{% url 'invoice_list' %}" class="button is-light">Annuler</a>
+        </div>
+    </div>
+</form>
+{% endblock %}

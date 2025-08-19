@@ -1,0 +1,18 @@
+Bonjour {{ client_name }},
+
+Veuillez trouver ci-joint votre facture N°{{ invoice.invoice_number }} émise par {{ company_name }}.
+
+**Détails de la facture :**
+Numéro de facture : {{ invoice.invoice_number }}
+Date d'émission : {{ invoice.issue_date|date:"d F Y" }}
+Montant total : {{ invoice.total_amount|floatformat:2 }} FCFA
+Date d'échéance : {% if invoice.due_date %}{{ invoice.due_date|date:"d F Y" }}{% else %}Non spécifiée{% endif %}
+
+N'hésitez pas à nous contacter si vous avez des questions.
+
+Cordialement,
+
+L'équipe de {{ company_name }}
+{% if user.is_authenticated %}
+{{ user.first_name }} {{ user.last_name }} ({{ user.username }})
+{% endif %}

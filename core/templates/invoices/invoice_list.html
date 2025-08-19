@@ -1,0 +1,183 @@
+{% extends 'core/base.html' %}
+{% load crispy_forms_tags %}
+{# Pour utiliser l'addition dans le template, par exemple pour la pagination #}
+ {# N'oubliez pas d'ajouter 'mathfilters' à INSTALLED_APPS si ce n'est pas déjà fait #}
+
+
+{% block title %}Mes Factures{% endblock %}
+
+{% block content %}
+<h1 class="title is-3 is-size-4-mobile">Mes Factures</h1> {# is-size-4-mobile pour un titre légèrement plus petit #}
+<p class="subtitle is-5 is-size-6-mobile">Suivez l'historique et le statut de vos factures.</p>
+
+<div class="columns is-vcentered is-mobile is-multiline mb-5">
+    {# Formulaire de recherche - Prendra plus de place sur mobile #}
+    <div class="column is-full-mobile is-two-thirds-tablet is-half-desktop">
+        <form method="GET" action="{% url 'invoice_list' %}">
+            <div class="field has-addons">
+                <div class="control is-expanded">
+                    <input class="input is-small is-small-mobile" type="text" name="q" placeholder="Rechercher..." value="{{ query }}"> {# Placeholder plus court #}
+                </div>
+                <div class="control">
+                    <button type="submit" class="button is-link is-small is-small-mobile">
+                        <span class="icon is-small"><i class="fas fa-search"></i></span>
+                        <span class="is-hidden-mobile">Rechercher</span> {# Texte masqué sur mobile, icône seulement #}
+                    </button>
+                </div>
+                {% if query %}
+                <div class="control">
+                    <a href="{% url 'invoice_list' %}" class="button is-danger is-light is-small-mobile">
+                        <span class="icon is-small"><i class="fas fa-times"></i></span>
+                        <span class="is-hidden-mobile">Effacer</span> {# Texte masqué sur mobile, icône seulement #}
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+    {# Bouton Nouvelle Facture - Prendra moins de place sur mobile et sera aligné à droite #}
+    <div class="column is-full-mobile is-one-third-tablet is-half-desktop has-text-right-tablet has-text-centered-mobile">
+        <a href="{% url 'invoice_create' %}" class="button is-link is-small is-fullwidth-mobile"> {# is-small pour desktop/tablet, is-fullwidth-mobile pour mobile #}
+            <span class="icon is-small"><i class="fas fa-plus"></i></span>
+            <span class="is-hidden-mobile">Nouvelle Facture</span> {# Masquer sur mobile #}
+            <span class="is-hidden-tablet-only is-hidden-desktop">Facture</span> {# Texte plus court sur mobile #}
+        </a>
+    </div>
+</div>
+
+
+{% if page_obj %}
+<div class="table-container"> {# Cette classe est essentielle pour le défilement horizontal #}
+    <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth">
+        <thead>
+            <tr>
+                <th>Numéro</th>
+                <th class="is-hidden-mobile">Client</th> {# Masqué sur mobile pour gagner de la place #}
+                <th>Date</th>
+                <th class="is-hidden-mobile">Échéance</th> {# Masqué sur mobile #}
+                <th>Total</th>
+                <th class="is-hidden-mobile">Statut</th> {# Masqué sur mobile #}
+                <th class="has-text-centered">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for invoice in page_obj %}
+            <tr>
+                {# Numéro de facture et lien #}
+                <td><a href="{% url 'invoice_detail' invoice.pk %}" class="is-size-7-mobile">{{ invoice.invoice_number }}</a></td>
+                {# Client - Masqué sur mobile #}
+                <td class="is-hidden-mobile is-size-7-mobile">{{ invoice.client.name }}</td>
+                {# Date d'émission #}
+                <td class="is-size-7-mobile">{{ invoice.issue_date|date:"d M Y" }}</td>
+                {# Date d'échéance - Masqué sur mobile #}
+                <td class="is-hidden-mobile is-size-7-mobile">{{ invoice.due_date|date:"d M Y"|default:"N/A" }}</td>
+                {# Montant total #}
+                <td class="is-size-7-mobile">{{ invoice.total_amount|floatformat:2 }} FCFA</td>
+                {# Statut - Masqué sur mobile #}
+                <td class="is-hidden-mobile">
+                    <span class="tag is-small
+                        {% if invoice.status == 'Draft' %}is-light{% elif invoice.status == 'Sent' %}is-info{% elif invoice.status == 'Paid' %}is-success{% elif invoice.status == 'Partially Paid' %}is-warning{% elif invoice.status == 'Overdue' %}is-danger{% else %}is-dark{% endif %}">
+                        {{ invoice.get_status_display }}
+                    </span>
+                </td>
+                {# Cellule d'actions #}
+                <td class="has-text-centered">
+                    <div class="buttons is-centered is-small"> {# is-small sur les boutons individuels #}
+                        <a href="{% url 'invoice_detail' invoice.pk %}" class="button is-info is-light is-inverted is-small" title="Voir">
+                            <span class="icon is-small"><i class="fas fa-eye"></i></span>
+                            <span class="is-hidden-touch">Voir</span> {# Masquer le texte sur mobile/tablette #}
+                        </a>
+                        <a href="{% url 'invoice_update' invoice.pk %}" class="button is-warning is-light is-inverted is-small" title="Modifier">
+                            <span class="icon is-small"><i class="fas fa-edit"></i></span>
+                            <span class="is-hidden-touch">Modifier</span>
+                        </a>
+                        <a href="{% url 'invoice_delete' invoice.pk %}" class="button is-danger is-light is-inverted is-small" title="Supprimer">
+                            <span class="icon is-small"><i class="fas fa-trash-alt"></i></span>
+                            <span class="is-hidden-touch">Supprimer</span>
+                        </a>
+                        <a href="{% url 'invoice_pdf' invoice.pk %}" class="button is-primary is-light is-inverted is-small" title="PDF" target="_blank">
+                            <span class="icon is-small"><i class="fas fa-file-pdf"></i></span>
+                            <span class="is-hidden-touch">PDF</span>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{# --- Pagination Bulma améliorée pour mobile --- #}
+<nav class="pagination is-centered is-small" role="navigation" aria-label="pagination">
+    {% with current_query=query|default:'' %}
+        {% if page_obj.has_previous %}
+            <a class="pagination-previous" href="?page=1{% if current_query %}&q={{ current_query }}{% endif %}">
+                <span class="icon is-small"><i class="fas fa-angle-double-left"></i></span>
+                <span class="is-hidden-mobile">Première</span>
+            </a>
+            <a class="pagination-previous" href="?page={{ page_obj.previous_page_number }}{% if current_query %}&q={{ current_query }}{% endif %}">
+                <span class="icon is-small"><i class="fas fa-angle-left"></i></span>
+                <span class="is-hidden-mobile">Précédent</span>
+            </a>
+        {% else %}
+            <a class="pagination-previous" disabled>
+                <span class="icon is-small"><i class="fas fa-angle-double-left"></i></span>
+                <span class="is-hidden-mobile">Première</span>
+            </a>
+            <a class="pagination-previous" disabled>
+                <span class="icon is-small"><i class="fas fa-angle-left"></i></span>
+                <span class="is-hidden-mobile">Précédent</span>
+            </a>
+        {% endif %}
+
+        {% if page_obj.has_next %}
+            <a class="pagination-next" href="?page={{ page_obj.next_page_number }}{% if current_query %}&q={{ current_query }}{% endif %}">
+                <span class="is-hidden-mobile">Suivant</span>
+                <span class="icon is-small"><i class="fas fa-angle-right"></i></span>
+            </a>
+            <a class="pagination-next" href="?page={{ page_obj.paginator.num_pages }}{% if current_query %}&q={{ current_query }}{% endif %}">
+                <span class="is-hidden-mobile">Dernière</span>
+                <span class="icon is-small"><i class="fas fa-angle-double-right"></i></span>
+            </a>
+        {% else %}
+            <a class="pagination-next" disabled>
+                <span class="is-hidden-mobile">Suivant</span>
+                <span class="icon is-small"><i class="fas fa-angle-right"></i></span>
+            </a>
+            <a class="pagination-next" disabled>
+                <span class="is-hidden-mobile">Dernière</span>
+                <span class="icon is-small"><i class="fas fa-angle-double-right"></i></span>
+            </a>
+        {% endif %}
+
+        <ul class="pagination-list">
+            {# Affiche la page courante #}
+            <li><a class="pagination-link is-current" aria-label="Page {{ page_obj.number }}" aria-current="page">{{ page_obj.number }}</a></li>
+
+            {# Afficher les pages autour de la page courante pour la navigation #}
+            {% for i in page_obj.paginator.page_range %}
+                {% if i != page_obj.number %} {# Ne pas afficher la page courante deux fois #}
+                    {# Afficher les pages adjacentes et les extrémités #}
+                    {% if i == 1 or i == page_obj.paginator.num_pages or i >= page_obj.number|add:-1 and i <= page_obj.number|add:1 %}
+                        <li><a class="pagination-link is-hidden-mobile" aria-label="Go to page {{ i }}" href="?page={{ i }}{% if current_query %}&q={{ current_query }}{% endif %}">{{ i }}</a></li>
+                    {% elif i == page_obj.number|add:-2 or i == page_obj.number|add:2 %}
+                        <li class="is-hidden-mobile"><span class="pagination-ellipsis">&hellip;</span></li>
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
+        </ul>
+    {% endwith %}
+</nav>
+{# --- Fin Pagination Bulma --- #}
+
+{% else %}
+<div class="notification is-info">
+    Aucune facture trouvée.
+    {% if query %}
+        Pour votre recherche "{{ query }}". <a href="{% url 'invoice_list' %}">Effacer la recherche</a> ou <a href="{% url 'invoice_create' %}">créer une nouvelle facture</a>.
+    {% else %}
+        Vous n'avez pas encore de factures enregistrées. <a href="{% url 'invoice_create' %}">Créez-en une maintenant !</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

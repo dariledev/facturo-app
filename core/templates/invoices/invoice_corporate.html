@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Facture {{ invoice.invoice_number }}</title>
+    <style>
+        body { font-family: 'Georgia', serif; font-size: 14px; line-height: 1.6; color: #333; }
+        .container { max-width: 900px; margin: 40px auto; padding: 30px; border: 1px solid #ccc; }
+        .header { text-align: right; margin-bottom: 40px; }
+        .header h1 { font-size: 28px; color: #004085; text-transform: uppercase; margin-bottom: 0; }
+        .address-box { border: 1px solid #ddd; padding: 15px; margin-bottom: 30px; }
+        .address-box p { margin: 0 0 5px 0; }
+        .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+        .details-grid div { background-color: #f9f9f9; padding: 15px; }
+        .details-grid strong { color: #004085; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #e9ecef; color: #004085; font-weight: bold; }
+        .totals-section { text-align: right; margin-top: 30px; }
+        .totals-section table { width: 40%; float: right; }
+        .total-amount { font-size: 20px; font-weight: bold; color: #004085; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            {% if company.logo %}
+                 <img src="{{ company.logo.url }}" alt="Logo" style="max-height: 80px; width: auto;">
+            {% endif %}
+            <!--<h1>{{ company.name }}</h1>-->
+            <p class="subtitle is-6 mt-5">{{ company.address|linebreaksbr }}</p>
+            <p>Tél: {{ company.phone }} | Email: {{ company.email }}</p>
+        </div>
+
+        <div class="details-grid">
+            <div>
+                <strong>Facturé à:</strong>
+                <p>{{ client.name }}</p>
+                <p>{{ client.address|linebreaksbr }}</p>
+                <p>Email: {{ client.email }}</p>
+            </div>
+            <div>
+                <strong>Détails de la facture:</strong>
+                <p>N° Facture: {{ invoice.invoice_number }}</p>
+                <p>Date d'émission: {{ invoice.issue_date|date:"d M Y" }}</p>
+                <p>Date d'échéance: {{ invoice.due_date|date:"d M Y" }}</p>
+                <p>Statut: {{ invoice.get_status_display }}</p>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Quantité</th>
+                    <th>Prix unitaire</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in invoice_items %}
+                    <tr>
+                        <td>{{ item.description }}</td>
+                        <td>{{ item.quantity }}</td>
+                        <td>{{ item.unit_price }}</td>
+                        <td>{{ item.total_price }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="4">Aucun article dans cette facture.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="totals-section">
+            <table>
+                <tbody>
+                    <tr>
+                        <td>Sous-total:</td>
+                        <td>{{ invoice.subtotal }} F CFA</td>
+                    </tr>
+                    <tr>
+                        <td>Remise ({{ invoice.discount }}%):</td>
+                        <td>({{ invoice.discount }}%): -{{ discount_amount }} F CFA</td>
+                    </tr>
+                    <tr>
+                        <td>TVA:</td>
+                        <td>{{ invoice.tax_amount }} F CFA</td>
+                    </tr>
+                    <tr>
+                        <td>Frais de port:</td>
+                        <td>{{ invoice.shipping_cost }} F CFA</td>
+                    </tr>
+                    <tr>
+                        <td><div class="total-amount">TOTAL:</div></td>
+                        <td><div class="total-amount">{{ invoice.total_amount }} F CFA</div></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        {% if invoice.notes %}
+            <div style="clear:both; margin-top: 50px; border-top: 1px dashed #ccc; padding-top: 20px;">
+                <p><strong>Notes / Conditions de paiement:</strong></p>
+                <p>{{ invoice.notes|linebreaksbr }}</p>
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>

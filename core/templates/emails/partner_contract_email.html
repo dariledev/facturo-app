@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Bienvenue dans le programme partenaire Facturo</title>
+</head>
+<body>
+    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+        <h2 style="color: #007bff;">Félicitations, {{ partenaire.user.username }} !</h2>
+        <p>Toute l'équipe de Facturo est heureuse de vous accueillir en tant que **partenaire commercial** officiel. Vous avez validé votre formation avec succès et nous sommes impatients de démarrer cette collaboration.</p>
+
+        <h3 style="color: #28a745;">Votre contrat de partenariat</h3>
+        <p>Ce document est votre contrat de partenariat avec Facturo. Veuillez en prendre connaissance et le conserver précieusement.</p>
+        
+        <ul style="list-style-type: none; padding: 0;">
+            <li style="margin-bottom: 10px;">
+                <strong>Date de début du contrat :</strong> {{ partenaire.contract_start_date|date:"d F Y" }}
+            </li>
+            <li style="margin-bottom: 10px;">
+                <strong>Date de fin du contrat :</strong> {{ partenaire.contract_end_date|date:"d F Y" }}
+                <p style="font-size: 12px; color: #666; margin-top: 5px;">*Ce contrat est d'une durée de **3 mois**. Il peut être renouvelé depuis votre tableau de bord partenaire.</p>
+            </li>
+            <li style="margin-bottom: 10px;">
+                <strong>Taux de commission :</strong> <strong style="color: #dc3545; font-size: 1.2em;">{{ partenaire.commission_rate }}%</strong> sur chaque abonnement vendu.
+            </li>
+        </ul>
+
+        <h3 style="color: #17a2b8;">Vos outils de vente</h3>
+        <p>Votre lien de parrainage unique, vos supports marketing et votre tableau de bord partenaire seront disponibles dans votre espace personnel. Vous pouvez dès à présent commencer à vendre et à générer des revenus.</p>
+
+        <p>Si vous avez des questions, n'hésitez pas à nous contacter.</p>
+        
+<div style="text-align: center; margin-top: 30px;">
+    <a href="{{ partner_dashboard_url }}" style="background-color: #007bff; color: #fff; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+        Accéder à mon espace partenaire
+    </a>
+</div>
+
+        <p style="text-align: center; margin-top: 20px; font-size: 12px; color: #999;">
+            Merci de faire partie de l'aventure Facturo.
+            <br>
+            L'équipe Facturo
+        </p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,226 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Support Facturo - Questions Fréquentes{% endblock %}
+
+{% block content %}
+<section class="section pt-4 pb-4">
+    <div class="container is-fluid">
+        <h1 class="title is-4 has-text-centered mb-5 is-size-4-mobile">Besoin d'aide ? Consultez notre FAQ !</h1>
+
+        {# Section FAQ #}
+        <h2 class="title is-4 has-text-centered mb-4 is-size-5-mobile">Questions Fréquentes</h2>
+        <div class="columns is-centered">
+            <div class="column is-12-mobile is-8-desktop"> {# 12 colonnes sur mobile, 8 sur desktop #}
+                <div class="faq-container">
+                    {# Utilisation de <details> et <summary> pour une FAQ sémantique et nativement accessible #}
+                    {# FAQ Item 1 #}
+                    <details class="box p-4 mb-3 faq-details"> {# faq-details pour le style global si nécessaire #}
+                        <summary class="faq-question is-clickable">
+                            <h3 class="title is-6 is-size-6-mobile mb-0">1. Comment configurer les informations de mon entreprise ?</h3>
+                            <span class="icon is-pulled-right">
+                                <i class="fas fa-chevron-down faq-chevron-icon"></i> {# Icône pour le visuel #}
+                            </span>
+                        </summary>
+                        <div class="content faq-answer mt-3">
+                            <p class="is-size-7-mobile">Pour configurer les informations de votre entreprise, rendez-vous dans la section **"Mon entreprise"** via la barre latérale. Vous pourrez y saisir votre nom d'entreprise, adresse, numéro d'identification fiscale, télécharger votre logo et définir les conditions de paiement par défaut.</p>
+                        </div>
+                    </details>
+
+                    {# FAQ Item 2 #}
+                    <details class="box p-4 mb-3 faq-details">
+                        <summary class="faq-question is-clickable">
+                            <h3 class="title is-6 is-size-6-mobile mb-0">2. Comment créer une nouvelle facture ?</h3>
+                            <span class="icon is-pulled-right">
+                                <i class="fas fa-chevron-down faq-chevron-icon"></i>
+                            </span>
+                        </summary>
+                        <div class="content faq-answer mt-3">
+                            <p class="is-size-7-mobile">Pour créer une nouvelle facture, cliquez sur **"Factures"** dans la barre latérale, puis sur le bouton **"Créer une facture"**. Vous devrez ensuite sélectionner un client (ou en ajouter un nouveau), puis ajouter les produits ou services que vous souhaitez facturer. Le calcul des totaux se fera automatiquement.</p>
+                        </div>
+                    </details>
+
+                    {# FAQ Item 3 #}
+                    <details class="box p-4 mb-3 faq-details">
+                        <summary class="faq-question is-clickable">
+                            <h3 class="title is-6 is-size-6-mobile mb-0">3. Puis-je modifier une facture après l'avoir envoyée ?</h3>
+                            <span class="icon is-pulled-right">
+                                <i class="fas fa-chevron-down faq-chevron-icon"></i>
+                            </span>
+                        </summary>
+                        <div class="content faq-answer mt-3">
+                            <p class="is-size-7-mobile">Oui, vous pouvez modifier une facture même après l'avoir émise. Cependant, il est généralement recommandé de créer un **avoir** ou une nouvelle facture pour refléter les changements si la facture a déjà été envoyée ou payée, afin de maintenir une trace comptable claire. Pour modifier, accédez à la facture via la liste des factures et cliquez sur le bouton "Modifier".</p>
+                        </div>
+                    </details>
+
+                    {# FAQ Item 4 #}
+                    <details class="box p-4 mb-3 faq-details">
+                        <summary class="faq-question is-clickable">
+                            <h3 class="title is-6 is-size-6-mobile mb-0">4. Comment marquer une facture comme payée ?</h3>
+                            <span class="icon is-pulled-right">
+                                <i class="fas fa-chevron-down faq-chevron-icon"></i>
+                            </span>
+                        </summary>
+                        <div class="content faq-answer mt-3">
+                            <p class="is-size-7-mobile">Dans la liste de vos factures (**"Factures"** dans la barre latérale), cliquez sur la facture que vous souhaitez marquer. Sur la page de détail de la facture, vous trouverez un bouton **"Marquer comme payée"** ou une option similaire pour mettre à jour son statut. Le tableau de bord sera mis à jour en conséquence.</p>
+                        </div>
+                    </details>
+
+                    {# FAQ Item 5 #}
+                    <details class="box p-4 mb-3 faq-details">
+                        <summary class="faq-question is-clickable">
+                            <h3 class="title is-6 is-size-6-mobile mb-0">5. Facturo est-il compatible avec la législation fiscale du Gabon ?</h3>
+                            <span class="icon is-pulled-right">
+                                <i class="fas fa-chevron-down faq-chevron-icon"></i>
+                            </span>
+                        </summary>
+                        <div class="content faq-answer mt-3">
+                            <p class="is-size-7-mobile">Facturo est conçu pour être **flexible** et permettre la personnalisation des informations légales (numéro d'identification fiscale, conditions de paiement, etc.) nécessaires pour la conformité dans la plupart des pays. Cependant, il est de votre responsabilité de vous assurer que les informations que vous saisissez et le format de vos factures respectent **intégralement les lois fiscales en vigueur au Gabon** (ou dans votre juridiction). Nous vous recommandons de consulter un expert-comptable pour valider vos documents.</p>
+                        </div>
+                    </details>
+
+                    {# FAQ Item 6 #}
+                    <details class="box p-4 mb-3 faq-details">
+                        <summary class="faq-question is-clickable">
+                            <h3 class="title is-6 is-size-6-mobile mb-0">6. Comment exporter mes données (clients, produits, factures) ?</h3>
+                            <span class="icon is-pulled-right">
+                                <i class="fas fa-chevron-down faq-chevron-icon"></i>
+                            </span>
+                        </summary>
+                        <div class="content faq-answer mt-3">
+                            <p class="is-size-7-mobile">La fonctionnalité d'exportation des données est en cours de développement et sera disponible dans une prochaine mise à jour de Facturo. Nous nous engagons à vous fournir des options d'exportation complètes pour vos listes de clients, produits et l'historique de vos factures.</p>
+                        </div>
+                    </details>
+
+                    {# FAQ Item 7 #}
+                    <details class="box p-4 mb-3 faq-details">
+                        <summary class="faq-question is-clickable">
+                            <h3 class="title is-6 is-size-6-mobile mb-0">7. Que faire si j'ai oublié mon mot de passe ?</h3>
+                            <span class="icon is-pulled-right">
+                                <i class="fas fa-chevron-down faq-chevron-icon"></i>
+                            </span>
+                        </summary>
+                        <div class="content faq-answer mt-3">
+                            <p class="is-size-7-mobile">Si vous avez oublié votre mot de passe, cliquez sur le lien **"Mot de passe oublié ?"** sur la page de connexion. Suivez les instructions pour réinitialiser votre mot de passe en utilisant l'adresse e-mail associée à votre compte Facturo.</p>
+                        </div>
+                    </details>
+
+                    {# FAQ Item 8 #}
+                    <details class="box p-4 mb-3 faq-details">
+                        <summary class="faq-question is-clickable">
+                            <h3 class="title is-6 is-size-6-mobile mb-0">8. Comment puis-je obtenir les dernières mises à jour de Facturo ?</h3>
+                            <span class="icon is-pulled-right">
+                                <i class="fas fa-chevron-down faq-chevron-icon"></i>
+                            </span>
+                        </summary>
+                        <div class="content faq-answer mt-3">
+                            <p class="is-size-7-mobile">Avec votre licence à vie, vous bénéficierez automatiquement des mises à jour majeures et des correctifs de sécurité. Celles-ci sont déployées de manière transparente. Nous vous informerons des nouvelles fonctionnalités via des notifications dans l'application ou par e-mail.</p>
+                        </div>
+                    </details>
+                </div>
+            </div>
+        </div>
+
+        <hr class="my-6">
+
+        {# Lien vers la page de contact support #}
+        <div class="has-text-centered">
+            <h4 class="title is-5 mb-4 is-size-6-mobile">Vous n'avez pas trouvé votre réponse ?</h4>
+            <a href="{% url 'contact_support' %}" class="button is-primary is-medium is-responsive is-fullwidth-mobile">
+                <span class="icon"><i class="fas fa-question-circle"></i></span>
+                <span>Contactez le support Facturo</span>
+            </a>
+        </div>
+
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* CSS spécifique pour la page de support (FAQ) */
+    html, body {
+        overflow-x: hidden;
+        width: 100%;
+    }
+
+    .section {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+
+    .container.is-fluid {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+
+    /* Styles pour la balise <details> (FAQ) */
+    .faq-details {
+        border-radius: 4px; /* Coins arrondis pour la boîte */
+        box-shadow: 0 0.5em 1em -0.125em rgba(10, 10, 10, 0.1), 0 0px 0 1px rgba(10, 10, 10, 0.02); /* Ombre légère */
+        background-color: white; /* Fond blanc */
+    }
+
+    .faq-question {
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 1rem; /* Padding pour le résumé */
+        /* Retirer le style par défaut du triangle de details */
+        list-style: none; /* Cache le marqueur par défaut de <summary> */
+    }
+
+    .faq-question::-webkit-details-marker {
+        display: none; /* Cache le marqueur pour WebKit (Chrome, Safari) */
+    }
+
+    .faq-question p {
+        flex-grow: 1;
+        margin-bottom: 0;
+    }
+
+    .faq-chevron-icon {
+        transition: transform 0.2s ease-in-out;
+    }
+
+    /* Rotation de l'icône lorsque la section est ouverte */
+    .faq-details[open] .faq-chevron-icon {
+        transform: rotate(180deg);
+    }
+
+    .faq-answer {
+        padding: 0 1rem 0.75rem 1rem; /* Padding pour la réponse */
+        border-top: 1px solid #dbdbdb; /* Séparateur léger */
+        margin-top: 0 !important; /* Retirer la marge supérieure du content de Bulma */
+    }
+
+    /* Styles pour les titres et sous-titres sur mobile */
+    @media screen and (max-width: 768px) {
+        .title.is-size-3-mobile { font-size: 1.75rem !important; }
+        .title.is-size-4-mobile { font-size: 1.5rem !important; }
+        .title.is-size-5-mobile { font-size: 1.25rem !important; }
+        .title.is-size-6-mobile { font-size: 1rem !important; } /* Questions FAQ */
+        .is-size-7-mobile { font-size: 0.8rem !important; } /* Texte de réponse FAQ, help text */
+
+        .box {
+            padding: 1.25rem;
+        }
+
+        .button.is-fullwidth-mobile {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Comme nous utilisons <details> et <summary>, le JS pour les accordions est grandement simplifié.
+        // La fonctionnalité d'ouverture/fermeture est native.
+        // Nous n'avons plus besoin de gérer manuellement les classes 'is-hidden-answer' ou les rotations d'icônes via JS.
+        // Le JS pour le fichier attaché (id_attachment) n'est plus nécessaire ici.
+    });
+</script>
+{% endblock %}

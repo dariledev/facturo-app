@@ -1,0 +1,117 @@
+{% load invoice_filters %} {# Assurez-vous que ce filtre est chargé #}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Facture {{ invoice.invoice_number }}</title>
+    </head>
+<body>
+    <div class="header">
+        <div class="company-logo-container">
+            {% if company.logo %}
+                <img src="{{ company.logo.url }}" alt="{{ company.name }} Logo" class="company-logo">
+            {% endif %}
+        </div>
+        <div class="company-info">
+            <h1>{{ company.name }}</h1>
+            <p>{{ company.address|linebreaksbr }}</p>
+            <p>Téléphone: {{ company.phone|default:"N/A" }} | Email: {{ company.email|default:"N/A" }}</p>
+            <p><strong>N°RCCM / NIF : {{ company.tax_id|default:"Non renseigné" }}</strong></p>
+            {# Ajouté pour le contexte gabonais #}
+            <p>Délivrée à Libreville, Gabon</p>
+        </div>
+        <div class="invoice-title">
+            <h2>FACTURE</h2>
+            <p>N° : **{{ invoice.invoice_number }}**</p>
+            <p>Date d'émission : **{{ invoice.issue_date|date:"d F Y" }}**</p>
+            <p>Date d'échéance : **{{ invoice.due_date|date:"d F Y"|default:"N/A" }}**</p>
+            <p>Statut : **{{ invoice.get_status_display }}**</p>
+        </div>
+    </div>
+
+    <div class="addresses">
+        <div class="client-info">
+            <h3>Facturé à :</h3>
+            <p><strong>{{ client.name }}</strong></p>
+            <p>{{ client.address|linebreaksbr }}</p>
+            <p>Téléphone: {{ client.phone|default:"N/A" }} | Email: {{ client.email|default:"N/A" }}</p>
+            <p>Informations fiscales : {{ client.tax_info|default:"N/A" }}</p>
+        </div>
+    </div>
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th class="qty">Qté</th>
+                <th class="price">Prix Unitaire</th>
+                <th class="tax">TVA (%)</th>
+                <th class="total">Montant HT</th>
+                <th class="total">Montant TVA</th>
+                <th class="total">Total TTC</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in invoice.items.all %}
+            <tr>
+                <td>{{ item.description }}</td>
+                <td class="qty">{{ item.quantity }}</td>
+                <td class="price">{{ item.unit_price|floatformat:2 }} FCFA</td> {# Devise adaptée #}
+                <td class="tax">{{ item.tax_rate|floatformat:2 }} %</td>
+                <td class="total">{{ item.total_price|floatformat:2 }} FCFA</td>
+                <td class="total">{{ item.tax_amount|floatformat:2 }} FCFA</td>
+                <td class="total">{{ item.total_price|add:item.tax_amount|floatformat:2 }} FCFA</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="totals-and-notes">
+        <div class="totals">
+            <table class="totals-table">
+                <tr>
+                    <td>Sous-total :</td>
+                    <td>{{ invoice.subtotal|floatformat:2 }} FCFA</td>
+                </tr>
+                <tr>
+                    <td>Remise ({{ invoice.discount|floatformat:0 }}%) :</td>
+                    <td>- {{ invoice.subtotal|mul:invoice.discount|div:100|floatformat:2 }} FCFA</td>
+                </tr>
+                <tr>
+                    <td>Frais de port :</td>
+                    <td>{{ invoice.shipping_cost|floatformat:2 }} FCFA</td>
+                </tr>
+                <tr>
+                    <td>Montant Total TVA :</td>
+                    <td>{{ invoice.tax_amount|floatformat:2 }} FCFA</td>
+                </tr>
+                <tr class="grand-total">
+                    <td>**TOTAL À PAYER :**</td>
+                    <td>**{{ invoice.total_amount|floatformat:2 }} FCFA**</td>
+                </tr>
+            </table>
+        </div>
+
+        {% if invoice.notes %}
+        <div class="notes">
+            <h3>Notes & Conditions de Paiement :</h3>
+            <p>{{ invoice.notes|linebreaksbr }}</p>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if company.bank_details %}
+    <div class="bank-details">
+        <h3>Coordonnées Bancaires :</h3>
+        <p>{{ company.bank_details|linebreaksbr }}</p>
+    </div>
+    {% endif %}
+
+    <div class="footer">
+        <p>Merci pour votre confiance !</p>
+        <p>Facture générée par Facturo. Numéro : {{ invoice.invoice_number }}</p>
+        {# Informations légales gabonaises #}
+        <p>Conformément à la législation fiscale gabonaise.</p>
+    </div>
+</body>
+</html>

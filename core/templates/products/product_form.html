@@ -1,0 +1,23 @@
+{% extends 'core/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{% if product %}Modifier{% else %}Créer{% endif %} Produit/Service{% endblock %}
+
+{% block content %}
+<h1 class="title is-1">{% if product %}Modifier{% else %}Créer{% endif %} le Produit/Service</h1>
+
+<form method="post" class="box">
+    {% csrf_token %}
+    {{ form|crispy }}
+    <div class="field is-grouped">
+        <div class="control">
+            <button type="submit" class="button is-primary">
+                {% if product %}Mettre à jour{% else %}Créer{% endif %}
+            </button>
+        </div>
+        <div class="control">
+            <a href="{% url 'product_list' %}" class="button is-light">Annuler</a>
+        </div>
+    </div>
+</form>
+{% endblock %}

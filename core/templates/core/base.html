@@ -1,0 +1,460 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Facturo - Gestion de Factures{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.0/css/bulma.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script> 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    {% block extra_css %}{% endblock %}
+    <style>
+
+   @import url('https://fonts.googleapis.com/css2?family=Boldonse&family=Funnel+Display:wght@300..800&family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&family=Raleway:ital,wght@0,100..900;1,100..900&display=swap');
+        /* Custom Styles for Sidebar Navigation */
+        html, body {
+            font-family: Arial, Helvetica, sans-serif;
+            
+            height: 100%;
+            margin: 0;
+            overflow-x: hidden; /* Prevent horizontal scroll when sidebar is open */
+            display: flex; /* Utilisation de flexbox pour structurer la page */
+            flex-direction: column; /* La mise en page principale est en colonne */
+            min-height: 100vh; /* S'assure que le body prend au moins toute la hauteur de la fenêtre */
+        }
+
+        /* Overall layout with sidebar and main content */
+        .page-wrapper {
+            display: flex;
+            /* Retire le min-height ici, il sera géré par flex-grow du main-content */
+            /* et la sidebar s'étendra avec le contenu grâce à l'align-items: stretch par défaut de flex */
+            flex-grow: 1; /* Permet au wrapper de prendre l'espace disponible */
+        }
+
+        /* Sidebar container */
+        .sidebar {
+            width: 250px; /* Default width for sidebar */
+            background-color: #202569; /* A beautiful, deep blue (primary color) */
+            padding: 20px 0;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            /* Retire position: sticky et height: 100vh */
+            /* La sidebar s'étendra automatiquement avec le main-content */
+            /* Gérée par le flexbox du .page-wrapper */
+            transition: transform 0.3s ease-in-out, width 0.3s ease-in-out; /* Smooth transition */
+            z-index: 1000; /* Ensure sidebar is above other content on mobile */
+        }
+
+        /* Hidden sidebar on mobile by default */
+        @media screen and (max-width: 768px) {
+            .sidebar {
+                position: fixed; /* Fixed for mobile overlay */
+                transform: translateX(-100%); /* Hide it off-screen */
+                width: 75%; /* On mobile, sidebar takes 75% of screen width */
+                max-width: 250px; /* But not wider than 250px */
+                height: 100vh; /* Sur mobile, elle peut rester pleine hauteur de la vue */
+            }
+            .sidebar.is-active {
+                transform: translateX(0); /* Show it when active */
+            }
+        }
+
+        /* Sidebar brand/logo */
+        .sidebar-brand {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 0 20px;
+        }
+        .sidebar-brand .title {
+            color: white;
+            margin-bottom: 0;
+        }
+
+        /* Sidebar menu */
+        .sidebar-menu ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li a {
+            color: rgba(255, 255, 255, 0.85); /* Slightly transparent white for links */
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            text-decoration: none;
+            font-size: 1.05em;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        .sidebar-menu li a:hover,
+        .sidebar-menu li a.is-active {
+            background-color: rgba(0, 0, 0, 0.2); /* Darker on hover/active */
+            color: white;
+        }
+        .sidebar-menu li a .icon {
+            margin-right: 15px;
+            font-size: 1.2em; /* Slightly larger icons */
+            width: 25px; /* Fixed width for icons to align text */
+            text-align: center;
+        }
+        .sidebar-menu li a span {
+            flex-grow: 1;
+        }
+
+        /* User specific actions at the bottom of sidebar */
+        .sidebar-footer {
+            margin-top: auto; /* Push to the bottom */
+            padding: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+        .sidebar-footer .button {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        .sidebar-footer .user-greeting {
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 15px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        /* Main content area */
+        .main-content {
+            flex-grow: 1; /* Takes up remaining space */
+            padding: 20px;
+            background-color: #f9f9f9; /* Light background for content */
+            min-height: calc(100vh - 52px - 5rem); /* Ajusté: 100vh - hauteur top-navbar-mobile - hauteur du footer */
+            /* La hauteur du footer est d'environ 5rem (1rem = 16px, 1.5rem padding haut/bas + 0.85em font-size) */
+        }
+        /* Adjust main-content padding for mobile */
+        @media screen and (max-width: 768px) {
+            .main-content {
+                padding-top: 80px; /* Add space for fixed top-navbar-mobile */
+                padding-left: 10px; /* Less padding on sides for mobile */
+                padding-right: 10px;
+            }
+            /* Sur mobile, le min-height peut être ajusté car le footer est en dessous du scroll */
+            .main-content {
+                min-height: calc(100vh - 80px); /* 100vh - hauteur de la top-navbar-mobile */
+            }
+        }
+
+
+        /* Top bar for mobile (hamburger and title) */
+        .top-navbar-mobile {
+            display: none; /* Hidden by default on desktop */
+            background-color: #0056b3; /* Same as sidebar */
+            padding: 15px 20px;
+            align-items: center;
+            justify-content: space-between;
+            color: white;
+            position: fixed; /* Fixed at the top for mobile */
+            top: 0;
+            left: 0;
+            width: 100%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            z-index: 999;
+        }
+        @media screen and (max-width: 768px) {
+            .top-navbar-mobile {
+                display: flex; /* Show on mobile */
+            }
+            .sidebar-burger-mobile {
+                font-size: 1.5em;
+                cursor: pointer;
+            }
+            .top-navbar-mobile .title {
+                color: white;
+                margin-bottom: 0;
+            }
+        }
+
+        /* Overlay when sidebar is open on mobile */
+        .overlay {
+            display: none; /* Hidden by default */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 990; /* Below sidebar, above content */
+        }
+        .overlay.is-active {
+            display: block; /* Show when sidebar is open */
+        }
+
+        /* Specific styles for notification close button */
+        .notification .delete {
+            margin-left: auto;
+        }
+
+        /* Footer styles */
+        .footer {
+            background-color: #f5f5f5;
+            padding: 1rem 1.5rem;
+            text-align: center;
+            font-size: 0.85em;
+            color: #7a7a7a;
+            width: 100%; /* S'assurer qu'il prend toute la largeur */
+            flex-shrink: 0; /* Empêche le footer de rétrécir */
+            /* Positionnement retiré, il est géré par flex-direction: column du body */
+            z-index: 1; /* Assure qu'il est au-dessus du contenu si un problème de z-index surgit */
+            position: relative; /* Aide à ce que le z-index fonctionne */
+        }
+
+        /* Ensure Bulma columns wrap properly on mobile */
+        @media screen and (max-width: 768px) {
+            .columns.is-multiline {
+                display: flex;
+                flex-wrap: wrap;
+            }
+            .column.is-half-mobile {
+                width: 50% !important;
+            }
+            .column.is-full-mobile {
+                width: 100% !important;
+            }
+            /* Adjust padding for columns on mobile */
+            .columns:not(.is-desktop):not(.is-tablet) .column {
+                padding-left: 0.5rem;
+                padding-right: 0.5rem;
+            }
+        }
+        
+        /* --- STYLES POUR GRAPHIQUES ET TABLEAUX RESPONSIVES --- */
+        
+        /* Graphiques Chart.js */
+        .chart-container {
+            position: relative;
+            height: 400px; /* Hauteur par défaut pour desktop */
+            width: 100%; /* S'adapte à la largeur du parent */
+            margin-bottom: 20px; /* Espace sous les graphiques */
+        }
+
+        .chart-container canvas {
+            width: 100% !important; 
+            height: 100% !important;
+        }
+
+        @media screen and (max-width: 768px) {
+            .chart-container {
+                height: 300px; /* Hauteur plus petite sur mobile */
+                margin-bottom: 15px;
+            }
+        }
+
+        /* Tableaux */
+        .table-container {
+            overflow-x: auto; /* Permet le défilement horizontal si le tableau est trop large */
+            -webkit-overflow-scrolling: touch; /* Améliore le défilement sur iOS */
+            width: 100%; /* S'assure que le conteneur prend toute la largeur disponible */
+        }
+
+        @media screen and (max-width: 768px) {
+            .table {
+                font-size: 0.8em; /* Réduit la taille de la police pour les tableaux sur mobile */
+            }
+            .table th, .table td {
+                padding: 0.5em 0.75em; /* Réduit le padding pour plus de compacité */
+            }
+        }
+
+    </style>
+</head>
+<body>
+    <div class="top-navbar-mobile">
+        <i class="fas fa-bars sidebar-burger-mobile"></i>
+        <h1 class="title is-4">Facturo</h1>
+    </div>
+
+    <div class="page-wrapper">
+        <aside class="sidebar" id="sidebar-menu">
+            <div class="sidebar-brand">
+                <a href="{% url 'home' %}">
+                    <h1 class="title is-3">Facturo</h1>
+                </a>
+            </div>
+
+            <nav class="sidebar-menu">
+    <ul>
+        <li>
+            <a href="{% url 'home' %}" class="{% if request.resolver_match.url_name == 'home' %}is-active{% endif %}">
+                <span class="icon"><i class="fas fa-home"></i></span>
+                <span>Accueil</span>
+            </a>
+        </li>
+
+        {% if user.is_authenticated %}
+        <li>
+            <a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}is-active{% endif %}">
+                <span class="icon"><i class="fas fa-chart-line"></i></span>
+                <span>Tableau</span>
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'client_list' %}" class="{% if 'client' in request.resolver_match.url_name %}is-active{% endif %}">
+                <span class="icon"><i class="fas fa-users"></i></span>
+                <span>Clients</span>
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'product_list' %}" class="{% if 'product' in request.resolver_match.url_name %}is-active{% endif %}">
+                <span class="icon"><i class="fas fa-box-open"></i></span>
+                <span>Produits</span>
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'invoice_list' %}" class="{% if 'invoice' in request.resolver_match.url_name %}is-active{% endif %}">
+                <span class="icon"><i class="fas fa-file-invoice"></i></span>
+                <span>Factures</span>
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'company_settings' %}" class="{% if request.resolver_match.url_name == 'company_settings' %}is-active{% endif %}">
+                <span class="icon"><i class="fas fa-building"></i></span>
+                <span>Entreprise</span>
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'choose_invoice_template' %}" class="{% if 'invoice' in request.resolver_match.url_name %}is-active{% endif %}">
+                <span class="icon"><i class="fas fa-file-invoice"></i></span>
+                <span>Modèles</span>
+            </a>
+        </li>
+        
+        {% if user.is_partner %}
+        <li>
+            <a href="{% url 'partner_dashboard' %}" class="{% if 'partner_dashboard' in request.resolver_match.url_name %}is-active{% endif %}">
+                <span class="icon"><i class="fas fa-handshake"></i></span>
+                <span>Espace Partenaire</span>
+            </a>
+        </li>
+        {% endif %}
+        
+        {% endif %}
+    </ul>
+</nav>
+
+
+            <div class="sidebar-footer">
+                {% if user.is_authenticated %}
+                <p class="user-greeting">Bonjour, {{ user.username }}</p>
+                <a class="button is-danger is-small is-fullwidth" href="{% url 'logout' %}"> {# Added is-fullwidth #}
+                    <span class="icon"><i class="fas fa-sign-out-alt"></i></span>
+                    <span>Déconnexion</span>
+                </a>
+                {% else %}
+                <a class="button is-white is-outlined is-small is-fullwidth" href="{% url 'register' %}">
+                    <span class="icon"><i class="fas fa-user-plus"></i></span>
+                    <span>S'inscrire</span>
+                </a>
+                <a class="button is-light is-small is-fullwidth mt-2" href="{% url 'login' %}">
+                    <span class="icon"><i class="fas fa-sign-in-alt"></i></span>
+                    <span>Se connecter</span>
+                </a>
+                {% endif %}
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div class="container is-fluid">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="notification is-{% if message.tags == 'error' %}danger{% elif message.tags == 'success' %}success{% else %}info{% endif %}">
+                            <button class="delete"></button>
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                {% block content %}
+                {% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <div class="overlay" id="sidebar-overlay">
+    </div>
+
+    <footer class="footer">
+        <div class="content has-text-centered">
+            <p>
+                <strong>Facturo</strong> par Tak-Media <br> 
+            </p>
+             <p>
+                <a href="{% url 'support_page' %}">Support & Contact</a> | <a href="{% url 'terms_and_conditions' %}">Conditions Générales</a>
+                <a href="{% url 'privacy_policy_page' %}">Conditions Générales d'Utilisation</a> 
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Sidebar toggle for mobile
+            const sidebarBurger = document.querySelector('.sidebar-burger-mobile');
+            const sidebar = document.getElementById('sidebar-menu');
+            const overlay = document.getElementById('sidebar-overlay');
+
+            if (sidebarBurger && sidebar && overlay) {
+                sidebarBurger.addEventListener('click', () => {
+                    sidebar.classList.toggle('is-active');
+                    overlay.classList.toggle('is-active');
+                    // Gérer le débordement du corps
+                    document.body.classList.toggle('is-clipped'); // Utilise une classe Bulma pour overflow: hidden
+                });
+
+                // Close sidebar when clicking outside on overlay
+                overlay.addEventListener('click', () => {
+                    sidebar.classList.remove('is-active');
+                    overlay.classList.remove('is-active');
+                    document.body.classList.remove('is-clipped');
+                });
+                // Close sidebar when a link is clicked (useful if user navigates within sidebar)
+                const sidebarLinks = document.querySelectorAll('.sidebar-menu a');
+                sidebarLinks.forEach(link => {
+                    link.addEventListener('click', () => {
+                        if (window.innerWidth <= 768) { // Only on mobile
+                            sidebar.classList.remove('is-active');
+                            overlay.classList.remove('is-active');
+                            document.body.classList.remove('is-clipped');
+                        }
+                    });
+                });
+            }
+
+            // Close Bulma notifications
+            (document.querySelectorAll('.notification .delete') || []).forEach(($delete) => {
+                const $notification = $delete.parentNode;
+                $delete.addEventListener('click', () => {
+                    $notification.parentNode.removeChild($notification);
+                });
+            });
+
+            // Mark current active link in sidebar
+            const currentPath = window.location.pathname;
+            const sidebarLinks = document.querySelectorAll('.sidebar-menu a');
+            sidebarLinks.forEach(link => {
+                // Check for exact match or if path starts with link href
+                // This makes e.g., /clients/1/ active for /clients/
+                if (currentPath === link.getAttribute('href') || 
+                    (link.getAttribute('href') !== '/' && currentPath.startsWith(link.getAttribute('href')))) {
+                    link.classList.add('is-active');
+                } else {
+                    link.classList.remove('is-active'); // Ensure only one is active
+                }
+                // Special handling for dashboard (if it's just '/')
+                if (link.getAttribute('href') === '/' && currentPath === '/') {
+                    link.classList.add('is-active');
+                }
+            });
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
