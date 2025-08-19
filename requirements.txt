@@ -1,10 +1,6 @@
-# Créez le fichier
-echo "" > requirements.txt
-
-
-echo "Django" >> requirements.txt
-echo "gunicorn" >> requirements.txt
-echo "psycopg2-binary" >> requirements.txt
-echo "Pillow" >> requirements.txt
-echo "PyYAML" >> requirements.txt
-echo "requests" >> requirements.txt
+Django
+gunicorn
+psycopg2-binary
+Pillow
+PyYAML
+requests
