@@ -2,38 +2,38 @@
 {% block content %}
 <section class="section">
     <div class="container">
-        <h1 class="title is-2 has-text-link">{{ page_title }}</h1>
-        <p class="subtitle is-5">Bienvenue dans votre espace partenaire, {{ partenaire.user.first_name }} !</p>
+        <h1 class="title is-2 is-size-3-mobile has-text-link">{{ page_title }}</h1>
+        <p class="subtitle is-5 is-size-6-mobile">Bienvenue dans votre espace partenaire, {{ partenaire.user.first_name }} !</p>
         
         <hr>
 
         <div class="columns is-multiline">
-            <div class="column is-12">
+            <div class="column is-full">
                 <div class="box">
-                    <h2 class="title is-4">Vos performances</h2>
+                    <h2 class="title is-4 is-size-5-mobile">Vos performances</h2>
                     <div class="columns is-mobile is-multiline">
-                        <div class="column is-half-mobile">
-                            <div class="notification is-light has-text-centered">
-                                <p class="title is-4">{{ total_clients_referred }}</p>
-                                <p class="subtitle is-6">Clients référés</p>
+                        <div class="column is-one-quarter-desktop is-half-tablet is-full-mobile">
+                            <div class="box has-text-centered">
+                                <p class="heading is-size-7-mobile">Clients référés</p>
+                                <p class="title is-4 is-size-4-mobile">{{ total_clients_referred }}</p>
                             </div>
                         </div>
-                        <div class="column is-half-mobile">
-                            <div class="notification is-light has-text-centered">
-                                <p class="title is-4">{{ converted_clients_count }}</p>
-                                <p class="subtitle is-6">Clients convertis (payants)</p>
+                        <div class="column is-one-quarter-desktop is-half-tablet is-full-mobile">
+                            <div class="box has-text-centered">
+                                <p class="heading is-size-7-mobile">Clients convertis (payants)</p>
+                                <p class="title is-4 is-size-4-mobile">{{ converted_clients_count }}</p>
                             </div>
                         </div>
-                        <div class="column is-half-mobile">
-                            <div class="notification is-warning has-text-centered">
-                                <p class="title is-4">{{ total_revenue_generated|floatformat:2 }} FCFA</p>
-                                <p class="subtitle is-6">Revenus estimés générés</p>
+                        <div class="column is-one-quarter-desktop is-half-tablet is-full-mobile">
+                            <div class="box has-text-centered">
+                                <p class="heading is-size-7-mobile">Revenus estimés générés</p>
+                                <p class="title is-4 is-size-4-mobile has-text-warning">{{ total_revenue_generated|floatformat:2 }} FCFA</p>
                             </div>
                         </div>
-                        <div class="column is-half-mobile">
-                            <div class="notification is-primary has-text-centered">
-                                <p class="title is-4">{{ commission_earned|floatformat:2 }} FCFA</p>
-                                <p class="subtitle is-6">Commission estimée à recevoir</p>
+                        <div class="column is-one-quarter-desktop is-half-tablet is-full-mobile">
+                            <div class="box has-text-centered">
+                                <p class="heading is-size-7-mobile">Commission estimée à recevoir</p>
+                                <p class="title is-4 is-size-4-mobile has-text-primary">{{ commission_earned|floatformat:2 }} FCFA</p>
                             </div>
                         </div>
                     </div>
@@ -42,9 +42,9 @@
         </div>
 
         <div class="columns is-multiline">
-            <div class="column is-6">
+            <div class="column is-half-desktop is-full-mobile">
                 <div class="box">
-                    <h2 class="title is-4">Votre lien de parrainage unique</h2>
+                    <h2 class="title is-4 is-size-5-mobile">Votre lien de parrainage unique</h2>
                     <div class="field has-addons">
                         <div class="control is-expanded">
                             <input class="input" type="text" value="{{ referral_link }}" readonly>
@@ -55,103 +55,102 @@
                             </button>
                         </div>
                     </div>
-                    <p class="help">Utilisez ce lien pour que les nouveaux utilisateurs s'inscrivent. Votre commission sera automatiquement calculée.</p>
+                    <p class="help is-size-7-mobile">Utilisez ce lien pour que les nouveaux utilisateurs s'inscrivent. Votre commission sera automatiquement calculée.</p>
                 </div>
             </div>
             
-            <div class="column is-6">
+            <div class="column is-half-desktop is-full-mobile">
                 <div class="box">
-                    <h2 class="title is-4">Détails de votre contrat</h2>
-                    <p><strong>Statut :</strong> <span class="tag is-success">{{ partenaire.get_status_display }}</span></p>
-                    <p><strong>Taux de commission :</strong> <strong class="has-text-success">{{ partenaire.commission_rate }}%</strong></p>
-                    <p><strong>Début du contrat :</strong> {{ partenaire.contract_start_date|date:"d F Y" }}</p>
-                    <p><strong>Fin du contrat :</strong> {{ partenaire.contract_end_date|date:"d F Y" }}</p>
+                    <h2 class="title is-4 is-size-5-mobile">Détails de votre contrat</h2>
+                    <p class="is-size-6-mobile"><strong>Statut :</strong> <span class="tag is-success">{{ partenaire.get_status_display }}</span></p>
+                    <p class="is-size-6-mobile"><strong>Taux de commission :</strong> <strong class="has-text-success">{{ partenaire.commission_rate }}%</strong></p>
+                    <p class="is-size-6-mobile"><strong>Début du contrat :</strong> {{ partenaire.contract_start_date|date:"d F Y" }}</p>
+                    <p class="is-size-6-mobile"><strong>Fin du contrat :</strong> {{ partenaire.contract_end_date|date:"d F Y" }}</p>
                 </div>
             </div>
             
-<div class="column is-6">
-    <div class="box">
-        <h2 class="title is-4">Renouvellement de contrat</h2>
-        <p>Votre contrat actuel se termine le : <strong>{{ partenaire.contract_end_date|date:"d F Y" }}</strong>.</p>
-        
-        {% if partenaire.contract_end_date|timeuntil:today %}
-            <div class="notification is-warning mt-4">
-                <p><strong>Votre contrat arrive bientôt à échéance !</strong></p>
-                <p>Pensez à le renouveler pour 3 mois supplémentaires et continuer à gagner des commissions.</p>
-                <a href="{% url 'renew_partner_contract' %}" class="button is-link mt-3">Renouveler mon contrat</a>
-            </div>
-        {% endif %}
-    </div>
-</div>
-
-
-            <div class="column is-6">
+            <div class="column is-half-desktop is-full-mobile">
                 <div class="box">
-                    <h2 class="title is-4">Demande de retrait</h2>
-                    {% if is_eligible_for_withdrawal %}
-                        <p class="mb-4">Félicitations ! Vous êtes éligible pour faire une demande de retrait de vos commissions.</p>
-                        <button class="button is-link is-outlined" data-target="withdrawal-modal">
-                            <span class="icon is-small"><i class="fas fa-money-bill-wave"></i></span>
-                            <span>Demander un retrait</span>
-                        </button>
-                    {% else %}
-                        <div class="notification is-light is-danger">
-                            <p><strong>Désolé, vous n'êtes pas encore éligible.</strong></p>
-                            <p class="mt-2">Le montant minimum pour un retrait est de <strong>{{ MIN_WITHDRAWAL_AMOUNT|floatformat:0 }} FCFA</strong>. Continuez à parrainer des clients pour atteindre cet objectif !</p>
+                    <h2 class="title is-4 is-size-5-mobile">Renouvellement de contrat</h2>
+                    <p class="is-size-6-mobile">Votre contrat actuel se termine le : <strong>{{ partenaire.contract_end_date|date:"d F Y" }}</strong>.</p>
+                    
+                    {% if partenaire.contract_end_date|timeuntil:today %}
+                        <div class="notification is-warning mt-4 is-size-6-mobile">
+                            <p><strong>Votre contrat arrive bientôt à échéance !</strong></p>
+                            <p>Pensez à le renouveler pour 3 mois supplémentaires et continuer à gagner des commissions.</p>
+                            <a href="{% url 'renew_partner_contract' %}" class="button is-link mt-3 is-size-7-mobile">Renouveler mon contrat</a>
                         </div>
                     {% endif %}
                 </div>
             </div>
 
-            <div class="column is-12">
+            <div class="column is-half-desktop is-full-mobile">
                 <div class="box">
-                    <h2 class="title is-4">Supports marketing</h2>
-                    <p class="subtitle is-6">Téléchargez nos brochures, logos et autres documents pour promouvoir Facturo.</p>
+                    <h2 class="title is-4 is-size-5-mobile">Demande de retrait</h2>
+                    {% if is_eligible_for_withdrawal %}
+                        <p class="mb-4 is-size-6-mobile">Félicitations ! Vous êtes éligible pour faire une demande de retrait de vos commissions.</p>
+                        <button class="button is-link is-outlined is-size-7-mobile" data-target="withdrawal-modal">
+                            <span class="icon is-small"><i class="fas fa-money-bill-wave"></i></span>
+                            <span>Demander un retrait</span>
+                        </button>
+                    {% else %}
+                        <div class="notification is-light is-danger">
+                            <p class="is-size-6-mobile"><strong>Désolé, vous n'êtes pas encore éligible.</strong></p>
+                            <p class="mt-2 is-size-7-mobile">Le montant minimum pour un retrait est de <strong>{{ MIN_WITHDRAWAL_AMOUNT|floatformat:0 }} FCFA</strong>. Continuez à parrainer des clients pour atteindre cet objectif !</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="column is-full">
+                <div class="box">
+                    <h2 class="title is-4 is-size-5-mobile">Supports marketing</h2>
+                    <p class="subtitle is-6 is-size-7-mobile">Téléchargez nos brochures, logos et autres documents pour promouvoir Facturo.</p>
                     {% if marketing_materials %}
                     <ul class="mt-4">
                         {% for material in marketing_materials %}
                         <li class="mb-3">
                             <a href="{{ material.file.url }}" class="button is-primary is-light" download>
                                 <span class="icon is-small"><i class="fas fa-download"></i></span>
-                                <span>{{ material.title }}</span>
+                                <span class="is-size-7-mobile">{{ material.title }}</span>
                             </a>
-                            <p class="help ml-4">{{ material.description }}</p>
+                            <p class="help ml-4 is-size-7-mobile">{{ material.description }}</p>
                         </li>
                         {% endfor %}
                     </ul>
                     {% else %}
-                    <p class="mt-4">Aucun support marketing n'est disponible pour le moment.</p>
+                    <p class="mt-4 is-size-6-mobile">Aucun support marketing n'est disponible pour le moment.</p>
                     {% endif %}
                 </div>
             </div>
 
            {% if latest_referrals %}
-            <div class="column is-12">
+            <div class="column is-full">
                 <div class="box">
-                    <h2 class="title is-4">Vos derniers clients référés</h2>
+                    <h2 class="title is-4 is-size-5-mobile">Vos derniers clients référés</h2>
                     <div class="table-container">
                         <table class="table is-fullwidth is-striped">
                             <thead>
                                 <tr>
-                                    <th>Nom d'utilisateur</th>
-                                    <th>Adresse email</th>
-                                    <th>Date d'inscription</th>
-                                    <th>Statut</th>
+                                    <th class="subtitle is-6 is-size-7-mobile">Nom d'utilisateur</th>
+                                    <th class="subtitle is-6 is-size-7-mobile">Adresse email</th>
+                                    <th class="subtitle is-6 is-size-7-mobile">Date d'inscription</th>
+                                    <th class="subtitle is-6 is-size-7-mobile">Statut</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for referral in latest_referrals %}
                                 <tr>
-                                    <td>{{ referral.username }}</td>
-                                    <td>{{ referral.email }}</td>
-                                    <td>{{ referral.date_joined|date:"d M Y" }}</td>
+                                    <td class="is-size-7-mobile">{{ referral.username }}</td>
+                                    <td class="is-size-7-mobile">{{ referral.email }}</td>
+                                    <td class="is-size-7-mobile">{{ referral.date_joined|date:"d M Y" }}</td>
                                     <td>
                                         {% if referral.is_paid_subscriber %}
-                                            <span class="tag is-success is-light">Abonné</span>
+                                            <span class="tag is-success is-light is-size-7-mobile">Abonné</span>
                                         {% elif referral.is_trial_active %}
-                                            <span class="tag is-info is-light">En essai</span>
+                                            <span class="tag is-info is-light is-size-7-mobile">En essai</span>
                                         {% else %}
-                                            <span class="tag is-danger is-light">Inactif</span>
+                                            <span class="tag is-danger is-light is-size-7-mobile">Inactif</span>
                                         {% endif %}
                                     </td>
                                 </tr>
@@ -163,62 +162,62 @@
             </div>
             {% endif %}
 
-            <div class="box">
-                <h2 class="title is-5">Options du contrat</h2>
-                <p>Si vous souhaitez annuler votre contrat partenaire, cliquez sur le bouton ci-dessous. Cette action est irréversible.</p>
-                <br>
-                <a href="{% url 'cancel_partner_contract' %}" class="button is-danger is-outlined">
-                    <span class="icon"><i class="fas fa-times-circle"></i></span>
-                    <span>Annuler le contrat</span>
-                </a>
+            <div class="column is-full">
+                <div class="box">
+                    <h2 class="title is-5 is-size-6-mobile">Options du contrat</h2>
+                    <p class="is-size-6-mobile">Si vous souhaitez annuler votre contrat partenaire, cliquez sur le bouton ci-dessous. Cette action est irréversible.</p>
+                    <br>
+                    <a href="{% url 'cancel_partner_contract' %}" class="button is-danger is-outlined is-size-7-mobile">
+                        <span class="icon"><i class="fas fa-times-circle"></i></span>
+                        <span>Annuler le contrat</span>
+                    </a>
+                </div>
             </div>
 
-            <div class="columns is-multiline">
-                <div class="column is-12">
-                    <div class="box">
-                        <h2 class="title is-4">Questions et Support</h2>
-                        <div class="content">
-                            <h3><i class="fas fa-question-circle has-text-primary"></i> Foire aux questions (FAQ)</h3>
-                            <p>Trouvez rapidement les réponses aux questions les plus fréquentes sur le programme partenaire.</p>
-                            <ul>
-                                <li><strong>Quand est-ce que je reçois ma commission ?</strong><br>
-                                    Les commissions sont payées le **15 de chaque mois** par virement bancaire ou PayPal. Un seuil de 50 € est requis pour déclencher le paiement.
-                                </li>
-                                <li><strong>Comment est calculée la commission ?</strong><br>
-                                    Vous gagnez **{{ partenaire.commission_rate|floatformat:0 }}%** sur les abonnements de vos clients référés.
-                                </li>
-                                <li><strong>Où puis-je trouver de l'aide ?</strong><br>
-                                    Si vous ne trouvez pas la réponse ici, n'hésitez pas à nous contacter directement.
-                                </li>
-                            </ul>
-                            
-                            <h3 class="mt-5"><i class="fas fa-envelope-open-text has-text-primary"></i> Contactez le support</h3>
-                            <p>Pour toute question spécifique, veuillez remplir le formulaire ci-dessous.</p>
-                            
-                            <form method="post" action="{% url 'partner_dashboard' %}">
-                                {% csrf_token %}
-                                <div class="field">
-                                    <label class="label">{{ support_form.subject.label }}</label>
-                                    <div class="control">
-                                        {{ support_form.subject }}
-                                    </div>
+            <div class="column is-full">
+                <div class="box">
+                    <h2 class="title is-4 is-size-5-mobile">Questions et Support</h2>
+                    <div class="content">
+                        <h3 class="is-size-5-mobile"><i class="fas fa-question-circle has-text-primary"></i> Foire aux questions (FAQ)</h3>
+                        <p class="is-size-6-mobile">Trouvez rapidement les réponses aux questions les plus fréquentes sur le programme partenaire.</p>
+                        <ul>
+                            <li class="is-size-6-mobile"><strong>Quand est-ce que je reçois ma commission ?</strong><br>
+                                Les commissions sont payées le **15 de chaque mois** par virement bancaire ou PayPal. Un seuil de 50 € est requis pour déclencher le paiement.
+                            </li>
+                            <li class="is-size-6-mobile"><strong>Comment est calculée la commission ?</strong><br>
+                                Vous gagnez **{{ partenaire.commission_rate|floatformat:0 }}%** sur les abonnements de vos clients référés.
+                            </li>
+                            <li class="is-size-6-mobile"><strong>Où puis-je trouver de l'aide ?</strong><br>
+                                Si vous ne trouvez pas la réponse ici, n'hésitez pas à nous contacter directement.
+                            </li>
+                        </ul>
+                        
+                        <h3 class="mt-5 is-size-5-mobile"><i class="fas fa-envelope-open-text has-text-primary"></i> Contactez le support</h3>
+                        <p class="is-size-6-mobile">Pour toute question spécifique, veuillez remplir le formulaire ci-dessous.</p>
+                        
+                        <form method="post" action="{% url 'partner_dashboard' %}">
+                            {% csrf_token %}
+                            <div class="field">
+                                <label class="label">{{ support_form.subject.label }}</label>
+                                <div class="control">
+                                    {{ support_form.subject }}
                                 </div>
-                                <div class="field">
-                                    <label class="label">{{ support_form.message.label }}</label>
-                                    <div class="control">
-                                        {{ support_form.message }}
-                                    </div>
+                            </div>
+                            <div class="field">
+                                <label class="label">{{ support_form.message.label }}</label>
+                                <div class="control">
+                                    {{ support_form.message }}
                                 </div>
-                                <div class="field">
-                                    <div class="control">
-                                        <button type="submit" class="button is-primary">
-                                            <span class="icon"><i class="fas fa-paper-plane"></i></span>
-                                            <span>Envoyer le message</span>
-                                        </button>
-                                    </div>
+                            </div>
+                            <div class="field">
+                                <div class="control">
+                                    <button type="submit" class="button is-primary">
+                                        <span class="icon"><i class="fas fa-paper-plane"></i></span>
+                                        <span>Envoyer le message</span>
+                                    </button>
                                 </div>
-                            </form>
-                        </div>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -230,17 +229,17 @@
     <div class="modal-background"></div>
     <div class="modal-content">
         <div class="box">
-            <h3 class="title is-4">Demande de retrait</h3>
+            <h3 class="title is-4 is-size-5-mobile">Demande de retrait</h3>
             <form action="{% url 'request_withdrawal' %}" method="post">
                 {% csrf_token %}
                 <div class="field">
-                    <label class="label">Montant (F CFA)</label>
+                    <label class="label is-size-6-mobile">Montant (F CFA)</label>
                     <div class="control">
                         {{ withdrawal_form.amount }}
                     </div>
                 </div>
                 <div class="field">
-                    <label class="label">Méthode de paiement</label>
+                    <label class="label is-size-6-mobile">Méthode de paiement</label>
                     <div class="control">
                         <div class="select is-fullwidth">
                             {{ withdrawal_form.payment_method }}
@@ -248,14 +247,14 @@
                     </div>
                 </div>
                 <div class="field">
-                    <label class="label">Détails pour le paiement</label>
+                    <label class="label is-size-6-mobile">Détails pour le paiement</label>
                     <div class="control">
                         {{ withdrawal_form.payment_details }}
                     </div>
                 </div>
                 <div class="field mt-5">
                     <div class="control">
-                        <button type="submit" class="button is-info is-fullwidth">Soumettre la demande</button>
+                        <button type="submit" class="button is-info is-fullwidth is-size-7-mobile">Soumettre la demande</button>
                     </div>
                 </div>
             </form>
